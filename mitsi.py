@@ -36,7 +36,6 @@ class HeatPump(object):
         self.info_packet_index = 0
         self.last_send = 0
         self.current_packet = None
-        self.packet_history = {}
         self.wanted_state = {}
         self.start_packet = Packet.build(0x5A, [0xCA, 0x01])
         self.info_packets = [
@@ -136,27 +135,6 @@ class HeatPump(object):
                     if self.current_packet.data[0] == 0x03:  # Temp Packet
                         self.room_temp = ROOM_TEMP.lookup(self.current_packet.data[3])
                         log.debug("Temp Packet: %s" % self.room_temp)
-
-                    if (
-                        self.current_packet.data[0] in self.packet_history
-                        and self.current_packet
-                        == self.packet_history[self.current_packet.data[0]]
-                    ):
-                        pass
-                    else:
-                        log.debug(
-                            "HP Packet: 0x%x : %s : 0x%x"
-                            % (
-                                self.current_packet.type,
-                                ",".join(
-                                    ["%02x" % x for x in self.current_packet.data]
-                                ),
-                                self.current_packet.checksum,
-                            )
-                        )
-                    self.packet_history[
-                        self.current_packet.data[0]
-                    ] = self.current_packet
                     self.current_packet = None
                 else:
                     log.info("HP Packet Invalid")
