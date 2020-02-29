@@ -7,7 +7,7 @@ from copy import copy
 
 import serial
 
-from mitsi_lookup import (
+from mitsubishi.mitsi_lookup import (
     CONTROL_PACKET_POSITIONS,
     CONTROL_PACKET_VALUES,
     DIR,
