@@ -44,7 +44,7 @@ class Message(bytearray):
     def from_stream(cls, device):
         port = device.serial_port
         byte = port.read()
-        if ord(byte) == chr(cls.START_BYTE):
+        if ord(byte) == cls.START_BYTE:
             message = bytearray([byte] + port.read(21))
             if cls.valid(message):
                 return cls.decode(message)
