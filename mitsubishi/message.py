@@ -15,7 +15,7 @@ class Message(bytearray):
     @classmethod
     def valid(cls, message):
         return all([
-            len(message.message) == cls.HEADER_LEN + message.data_length,
+            len(message) == cls.HEADER_LEN + message.data_length,
             cls.checksum(message.message[:-1]) == message.message[-1],
         ])
 
