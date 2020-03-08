@@ -45,7 +45,7 @@ class Message(bytearray):
         port = device.serial_port
         byte = port.read()
         if ord(byte) == cls.START_BYTE:
-            message = bytearray([byte] + port.read(21))
+            message = bytearray(byte + port.read(21))
             if cls.valid(message):
                 return cls.decode(message)
 
