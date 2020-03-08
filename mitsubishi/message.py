@@ -9,6 +9,7 @@ class Message(bytearray):
 
     INITIALIZE_SERIAL = 0x5A
     REQUEST_INFO = 0x42
+    RESPONSE_INFO = 0x62
 
     EXTRA_HEADER = [0x01, 0x30]
 
@@ -110,7 +111,7 @@ class SettingsMessage(Message):
 
         return (
             msg_type == cls.SEND_UPDATE
-            or (msg_type == cls.REQUEST_INFO and subtype == cls.SETTINGS_INFO)
+            or (msg_type in {cls.REQUEST_INFO, cls.RESPONSE_INFO} and subtype == cls.SETTINGS_INFO)
         )
 
     @classmethod
@@ -142,7 +143,7 @@ class TemperatureMessage(Message):
     def is_temperature_message(cls, message):
         msg_type = message[cls.COMMAND_TYPE]
         subtype = message[cls.COMMAND_SUBTYPE]
-        return msg_type == cls.REQUEST_INFO and subtype == cls.ROOM_TEMP_INFO
+        return msg_type in {cls.REQUEST_INFO, cls.RESPONSE_INFO} and subtype == cls.ROOM_TEMP_INFO
 
     @classmethod
     def info_request(cls):
