@@ -1,3 +1,13 @@
+from .lookup import (
+    FAN_LOOKUP,
+    HORIZONTAL_VANE_LOOKUP,
+    MODE_LOOKUP,
+    POWER_LOOKUP,
+    ROOM_TEMP_LOOKUP,
+    SET_POINT_LOOKUP,
+    VERTICAL_VANE_LOOKUP,
+)
+
 class Message(bytearray):
     HEADER_LEN = 5
 
@@ -80,15 +90,18 @@ class Message(bytearray):
             for i in range(22)
         ]) + f"\tlen={self.data_length:03}\ttype={self.type:02x}"
 
-def message_property(data_position, update_bitmask=None):
+def message_property(data_position, update_bitmask=None, lookup_table=tuple()):
+
+    get_lookup = dict(lookup_table)
     def _getter(self):
-        return self[self.HEADER_LEN + data_position]
+        return get_lookup.get(self[self.HEADER_LEN + data_position])
 
     _setter = None
     if update_bitmask is not None:
+        set_lookup = dict((j, i) for i, j in lookup_table)
         def _setter(self, value):
             self[self.UPDATE_MASK_INDEX] |= update_bitmask
-            self[self.HEADER_LEN + data_position] = value
+            self[self.HEADER_LEN + data_position] = set_lookup[value]
             self[-1] = Message.checksum(self[:-1])
 
     return property(
@@ -103,12 +116,12 @@ class SettingsMessage(Message):
 
     UPDATE_MASK_INDEX = 6
 
-    power = message_property(3, update_bitmask=1)
-    mode = message_property(4, update_bitmask=0b10)
-    set_point = message_property(5, update_bitmask=0b100)
-    fan_speed = message_property(6, update_bitmask=0b1000)
-    horizontal_vane = message_property(7, update_bitmask=0b10000)
-    vertical_vane = message_property(10, update_bitmask=0b10000000)
+    power = message_property(3, update_bitmask=1, lookup_table=POWER_LOOKUP)
+    mode = message_property(4, update_bitmask=0b10, lookup_table=MODE_LOOKUP)
+    set_point = message_property(5, update_bitmask=0b100, lookup_table=SET_POINT_LOOKUP)
+    fan_speed = message_property(6, update_bitmask=0b1000, lookup_table=FAN_LOOKUP)
+    horizontal_vane = message_property(7, update_bitmask=0b10000, lookup_table=HORIZONTAL_VANE_LOOKUP)
+    vertical_vane = message_property(10, update_bitmask=0b10000000, lookup_table=VERTICAL_VANE_LOOKUP)
 
     @classmethod
     def is_settings_message(cls, message):
@@ -153,7 +166,7 @@ class SettingsMessage(Message):
 class TemperatureMessage(Message):
     ROOM_TEMP_INFO = 0x03
 
-    room_temp = message_property(3)
+    room_temp = message_property(3, lookup_table=ROOM_TEMP_LOOKUP)
 
     # this seems to change, in auto mode,
     # b1 when temp was at set point, b2 when over...maybe?

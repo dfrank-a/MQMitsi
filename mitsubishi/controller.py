@@ -18,7 +18,7 @@ class HeatPumpController:
         self.device.write(Message.start_command())
         self.message_stream = Message.stream_from_device(self.device)
 
-    def loop(self):
+    def loop(self, interval=60):
         for message in self.message_stream:
             logger.debug(repr(message))
 
@@ -29,4 +29,4 @@ class HeatPumpController:
             else:
                 self.device.write(TemperatureMessage.info_request())
 
-            sleep(60)
+            sleep(interval)
