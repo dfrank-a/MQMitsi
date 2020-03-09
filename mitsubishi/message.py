@@ -1,3 +1,5 @@
+import logging
+
 from .lookup import (
     FAN_LOOKUP,
     HORIZONTAL_VANE_LOOKUP,
@@ -7,6 +9,8 @@ from .lookup import (
     SET_POINT_LOOKUP,
     VERTICAL_VANE_LOOKUP,
 )
+
+logger = logging.getLogger(__name__)
 
 class Message(bytearray):
     HEADER_LEN = 5
@@ -47,6 +51,7 @@ class Message(bytearray):
     @classmethod
     def from_stream(cls, device):
         byte = device.read()
+        logger.debug(f'Got byte {byte}')
         if byte and ord(byte) == cls.START_BYTE:
             header = byte + device.read(cls.HEADER_LEN - 1)
             data_len = header[cls.DATA_LEN]
