@@ -95,7 +95,7 @@ def message_property(data_position, update_bitmask=None, lookup_table=tuple()):
     get_lookup = dict(lookup_table)
     def _getter(self):
         value = self[self.HEADER_LEN + data_position]
-        return get_lookup.get(value, default=value)
+        return get_lookup.get(value, value)
 
     _setter = None
     if update_bitmask is not None:
