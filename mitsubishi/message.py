@@ -45,22 +45,16 @@ class Message(bytearray):
         return Message(message)
 
     @classmethod
-    def stream_from_device(cls, device):
-        while True:
-            message = cls.from_stream(device)
-            if message:
-                yield message
-
-    @classmethod
     def from_stream(cls, device):
         port = device.serial_port
-        byte = port.read()
+        byte = port.read(timeout = 0)
         if ord(byte) == cls.START_BYTE:
             header = byte + port.read(cls.HEADER_LEN - 1)
             data_len = header[cls.DATA_LEN]
             message = header + port.read(data_len + 1)
             if cls.valid(message):
                 return cls.decode(message)
+        return None
 
     @classmethod
     def start_command(cls):
