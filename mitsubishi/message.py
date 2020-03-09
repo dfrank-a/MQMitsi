@@ -74,6 +74,12 @@ class Message(bytearray):
     def type(self):
         return self[self.COMMAND_TYPE]
 
+    def __repr__(self):
+        return " ".join([
+            f"{self[i]:02x}" if i < len(self) else "  "
+            for i in range(22)
+        ]) + f"\tlen={self.data_length:03}\ttype={self.type:02x}"
+
 def message_property(data_position, update_bitmask=None):
     def _getter(self):
         return self[self.HEADER_LEN + data_position]
@@ -102,7 +108,7 @@ class SettingsMessage(Message):
     set_point = message_property(5, update_bitmask=0b100)
     fan_speed = message_property(6, update_bitmask=0b1000)
     horizontal_vane = message_property(7, update_bitmask=0b10000)
-    vertical_vanes = message_property(10, update_bitmask=0b10000000)
+    vertical_vane = message_property(10, update_bitmask=0b10000000)
 
     @classmethod
     def is_settings_message(cls, message):
@@ -115,7 +121,7 @@ class SettingsMessage(Message):
         )
 
     @classmethod
-    def info_command(cls):
+    def info_request(cls):
         return cls.build(
             cls.REQUEST_INFO,
             [
@@ -134,10 +140,24 @@ class SettingsMessage(Message):
             ]
         )
 
+    def __repr__(self):
+        return (
+                super().__repr__(self) +
+                f"power: {self.power} mode: {self.mode} "+
+                f"set point: {self.set_point} " +
+                f"fan speed: {self.fan_speed} " +
+                f"horizontal vane: {self.horizontal_vane}" +
+                f"vertical vane: {self.vertical_vane}"
+        )
+
 class TemperatureMessage(Message):
     ROOM_TEMP_INFO = 0x03
 
-    room_temp = message_property(8)
+    room_temp = message_property(3)
+
+    # this seems to change, in auto mode,
+    # b1 when temp was at set point, b2 when over...maybe?
+    unknown_1 = message_property(6)
 
     @classmethod
     def is_temperature_message(cls, message):
@@ -155,3 +175,9 @@ class TemperatureMessage(Message):
             ]
         )
 
+    def __repr__(self):
+        return (
+                super().__repr__(self) +
+                f"room temp: {self.room_temp} " +
+                f"unknown byte: {self.unknown_1}"
+        )
