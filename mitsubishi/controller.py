@@ -21,7 +21,7 @@ class HeatPumpController:
             timeout=0
         )
         self.device.write(Message.start_command())
-        self.queue = asyncio.Queue()
+        self.queue = None
         self.temp_refresh_rate = temp_refresh_rate
         self.settings_refresh_rate = settings_refresh_rate
 
@@ -51,6 +51,7 @@ class HeatPumpController:
 
     def loop(self):
         async def _loop():
+            self.queue = asyncio.Queue()
             await asyncio.gather(
                 self.read_device_stream(),
                 self.submit_messages(),
