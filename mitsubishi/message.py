@@ -142,7 +142,7 @@ class SettingsMessage(Message):
 
     def __repr__(self):
         return (
-                super().__repr__(self) +
+                super().__repr__() +
                 f"power: {self.power} mode: {self.mode} "+
                 f"set point: {self.set_point} " +
                 f"fan speed: {self.fan_speed} " +
@@ -177,7 +177,7 @@ class TemperatureMessage(Message):
 
     def __repr__(self):
         return (
-                super().__repr__(self) +
+                super().__repr__() +
                 f"room temp: {self.room_temp} " +
                 f"unknown byte: {self.unknown_1}"
         )
