@@ -41,10 +41,13 @@ class HeatPumpController:
 
     async def submit_messages(self):
         while True:
-            message = await self.queue.get()
-            logger.debug("Sending message")
-            self.device.write(message)
-            self.queue.task_done()
+            try:
+                message = self.queue.get_nowait()
+                logger.debug("Sending message")
+                self.device.write(message)
+                self.queue.task_done()
+            except asyncio.QueueEmpty:
+                pass
 
     async def read_device_stream(self):
         while True:
