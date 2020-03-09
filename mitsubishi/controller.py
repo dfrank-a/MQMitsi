@@ -46,7 +46,8 @@ class HeatPumpController:
     async def read_device_stream(self):
         while True:
             message = Message.from_stream(self.device)
-            logger.debug(repr(message))
+            if message is not None:
+                logger.debug(repr(message))
             await asyncio.sleep(0.1)
 
     def loop(self):
