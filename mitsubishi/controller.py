@@ -2,6 +2,7 @@ import logging
 from time import sleep
 
 from .message import Message, SettingsMessage, TemperatureMessage
+from .heat_pump import HeatPump
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -12,7 +13,7 @@ logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
 class HeatPumpController:
-    def __init__(self, device):
+    def __init__(self, serial_port):
         self.device = device
         self.device.write(Message.start_command())
         self.message_stream = Message.stream_from_device(self.device)
