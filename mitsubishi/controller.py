@@ -52,6 +52,7 @@ class HeatPumpController:
 
     async def read_device_stream(self):
         while True:
+            logger.debug("Checking messages")
             message = Message.from_stream(self.device)
             if message is not None:
                 logger.info(repr(message))
