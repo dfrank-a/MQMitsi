@@ -64,10 +64,10 @@ class HeatPumpController:
             await asyncio.gather(*[
                 asyncio.create_task(task)
                 for task in [
-                    self.read_device_stream(),
-                    self.submit_messages(),
                     self.request_settings_update(),
-                    self.request_temperature_update()
+                    self.request_temperature_update(),
+                    self.submit_messages(),
+                    self.read_device_stream(),
                 ]
             ])
         asyncio.run(_loop())
