@@ -59,9 +59,11 @@ class Message(bytearray):
         byte = device.read()
         logger.debug(f'Got byte {byte}')
         if byte and ord(byte) == cls.START_BYTE:
+            device.timeout = None
             header = byte + device.read(cls.HEADER_LEN - 1)
             data_len = header[cls.DATA_LEN]
             message = header + device.read(data_len + 1)
+            device.timeout = 0
             if cls.valid(message):
                 return cls.decode(message)
         return None
