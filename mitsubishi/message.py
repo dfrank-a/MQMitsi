@@ -121,8 +121,8 @@ class SettingsMessage(Message):
     mode = message_property(4, update_bitmask=0b10, lookup_table=MODE_LOOKUP)
     set_point = message_property(5, update_bitmask=0b100, lookup_table=SET_POINT_LOOKUP)
     fan_speed = message_property(6, update_bitmask=0b1000, lookup_table=FAN_LOOKUP)
-    horizontal_vane = message_property(7, update_bitmask=0b10000, lookup_table=HORIZONTAL_VANE_LOOKUP)
-    vertical_vane = message_property(10, update_bitmask=0b10000000, lookup_table=VERTICAL_VANE_LOOKUP)
+    vertical_vane = message_property(7, update_bitmask=0b10000, lookup_table=VERTICAL_VANE_LOOKUP)
+    horizontal_vane = message_property(10, update_bitmask=0b10000000, lookup_table=HORIZONTAL_VANE_LOOKUP)
 
     @classmethod
     def is_settings_message(cls, message):
