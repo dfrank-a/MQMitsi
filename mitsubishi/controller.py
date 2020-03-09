@@ -13,7 +13,7 @@ logger.setLevel(logging.DEBUG)
 class HeatPumpController:
     def __init__(self, device):
         self.device = device
-        self.send(Message.start_command())
+        self.device.write(Message.start_command())
         self.message_stream = Message.stream_from_device(self.device)
 
     def loop(self):
