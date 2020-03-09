@@ -11,6 +11,12 @@ from .lookup import (
 )
 
 logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(
+    logging.Formatter('%(asctime)s: %(message)s')
+)
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
 
 class Message(bytearray):
     HEADER_LEN = 5
