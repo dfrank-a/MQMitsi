@@ -28,18 +28,21 @@ class HeatPumpController:
     async def request_temperature_update(self):
         TEMP_REQUEST = TemperatureMessage.info_request()
         while True:
+            logger.debug("Requesting temp update")
             await self.queue.put(TEMP_REQUEST)
             await asyncio.sleep(self.temp_refresh_rate)
 
     async def request_settings_update(self):
         SETTINGS_REQUEST = SettingsMessage.info_request()
         while True:
+            logger.debug("Requesting settings update")
             await self.queue.put(SETTINGS_REQUEST)
             await asyncio.sleep(self.settings_refresh_rate)
 
     async def submit_messages(self):
         while True:
             message = await self.queue.get()
+            logger.debug("Sending message")
             self.device.write(message)
             self.queue.task_done()
 
@@ -47,7 +50,7 @@ class HeatPumpController:
         while True:
             message = Message.from_stream(self.device)
             if message is not None:
-                logger.debug(repr(message))
+                logger.info(repr(message))
             await asyncio.sleep(0.1)
 
     def loop(self):
