@@ -35,7 +35,7 @@ class HeatPumpController:
         SETTINGS_REQUEST = SettingsMessage.info_request()
         while True:
             await self.queue.put(SETTINGS_REQUEST)
-            await asyncio.sleep(self.temp_refresh_rate)
+            await asyncio.sleep(self.settings_refresh_rate)
 
     async def submit_messages(self):
         while True:
