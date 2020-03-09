@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 
 from .message import Message, SettingsMessage, TemperatureMessage
 
@@ -27,3 +28,4 @@ class HeatPumpController:
             else:
                 self.device.write(TemperatureMessage.info_request())
 
+            sleep(60)

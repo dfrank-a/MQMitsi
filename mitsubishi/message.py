@@ -143,10 +143,10 @@ class SettingsMessage(Message):
     def __repr__(self):
         return (
                 super().__repr__() +
-                f"power: {self.power} mode: {self.mode} "+
+                f" power: {self.power} mode: {self.mode} "+
                 f"set point: {self.set_point} " +
                 f"fan speed: {self.fan_speed} " +
-                f"horizontal vane: {self.horizontal_vane}" +
+                f"horizontal vane: {self.horizontal_vane} " +
                 f"vertical vane: {self.vertical_vane}"
         )
 
