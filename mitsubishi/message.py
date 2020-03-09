@@ -46,7 +46,7 @@ class Message(bytearray):
 
     @classmethod
     def from_stream(cls, device):
-        byte = device.read(timeout = 0)
+        byte = device.read()
         if ord(byte) == cls.START_BYTE:
             header = byte + device.read(cls.HEADER_LEN - 1)
             data_len = header[cls.DATA_LEN]
