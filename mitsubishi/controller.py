@@ -5,12 +5,6 @@ import serial
 from .message import Message, SettingsMessage, TemperatureMessage
 
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-handler.setFormatter(
-    logging.Formatter('%(asctime)s: %(message)s')
-)
-logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
 
 class HeatPumpController:
     def __init__(self, serial_port, temp_refresh_rate=10, settings_refresh_rate=2):
