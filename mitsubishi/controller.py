@@ -48,13 +48,14 @@ class HeatPumpController:
                 self.queue.task_done()
             except asyncio.QueueEmpty:
                 pass
+            await asyncio.sleep(0)
 
     async def read_device_stream(self):
         while True:
             message = Message.from_stream(self.device)
             if message is not None:
                 logger.info(repr(message))
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
 
     def loop(self):
         async def _loop():
