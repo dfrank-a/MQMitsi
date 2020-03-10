@@ -184,7 +184,7 @@ class SettingsMessage(Message):
             ])
         else:
             return (
-                    super().__repr__() +
+                    super().__str__() +
                     f" {self.power} MODE:{self.mode} "+
                     f"{self.set_point} ºC" +
                     f"Fan: {self.fan_speed} " +
@@ -231,7 +231,7 @@ class TemperatureMessage(Message):
             ]
         )
 
-    def __repr__(self):
+    def __str__(self):
         return (
                 super().__str__() +
                 f" Room: {self.room_temp} ºC" +
