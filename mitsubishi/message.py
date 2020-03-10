@@ -84,18 +84,30 @@ class Message(bytearray):
     def type(self):
         return self[self.COMMAND_TYPE]
 
-    def __repr__(self):
+    @property
+    def subtype(self):
+        return self[self.HEADER_LEN]
+
+    def __str__(self):
         return " ".join([
             f"{self[i]:02x}" if i < len(self) else "  "
             for i in range(22)
-        ]) + f"\tlen={self.data_length:03}\ttype={self.type:02x}"
+        ]) + f" len={self.data_length:03} type={self.type:02x}"
 
 def message_property(data_position, update_bitmask=None, lookup_table=tuple()):
 
     get_lookup = dict(lookup_table)
-    def _getter(self):
-        value = self[self.HEADER_LEN + data_position]
-        return get_lookup.get(value, value)
+
+    if update_bitmask is not None:
+        def _getter(self):
+            if self.subtype == self.SETTINGS_INFO or self[self.UPDATE_MASK_INDEX] & update_bitmask:
+                value = self[self.HEADER_LEN + data_position]
+                return get_lookup.get(value, value)
+            return None
+    else:
+        def _getter(self):
+            value = self[self.HEADER_LEN + data_position]
+            return get_lookup.get(value, value)
 
     _setter = None
     if update_bitmask is not None:
@@ -154,15 +166,45 @@ class SettingsMessage(Message):
             ]
         )
 
-    def __repr__(self):
-        return (
-                super().__repr__() +
-                f"\tpower: {self.power} mode: {self.mode} "+
-                f"set point: {self.set_point} " +
-                f"fan speed: {self.fan_speed} " +
-                f"horizontal vane: {self.horizontal_vane} " +
-                f"vertical vane: {self.vertical_vane}"
-        )
+    def __str__(self):
+        if self.subtype == self.SUBTYPE_UPDATE:
+            return " ".join([
+                super().__str__(),
+                *[
+                    f.format(v)
+                    for f, v in [
+                        ("{:3s}", self.power),
+                        ("{:4s}", self.mode),
+                        ("{:5s}", self.fan_speed),
+                        ("H Vane {:5s}", self.horizontal_vane),
+                        ("V Vane {:5s}", self.vertical_vane)
+                    ]
+                    if v is not None
+                ]
+            ])
+        else:
+            return (
+                    super().__repr__() +
+                    f" {self.power} MODE:{self.mode} "+
+                    f"{self.set_point} ºC" +
+                    f"Fan: {self.fan_speed} " +
+                    f"H vane: {self.horizontal_vane} " +
+                    f"V vane: {self.vertical_vane}"
+            )
+
+    def __eq__(self, other):
+        return all([
+            a == b
+            for a, b in [
+                (self.power, other.power),
+                (self.mode, other.mode),
+                (self.set_point, other.set_point),
+                (self.fan_speed, other.fan_speed),
+                (self.vertical_vane, other.vertical_vane),
+                (self.horizontal_vane, other.horizontal_vane)
+            ]
+            if not (a is None or b is None)
+        ])
 
 class TemperatureMessage(Message):
     ROOM_TEMP_INFO = 0x03
@@ -191,7 +233,7 @@ class TemperatureMessage(Message):
 
     def __repr__(self):
         return (
-                super().__repr__() +
-                f"\troom temp: {self.room_temp} " +
-                f"unknown byte: {self.unknown_1}"
+                super().__str__() +
+                f" Room: {self.room_temp} ºC" +
+                f"???: {self.unknown_1}"
         )
