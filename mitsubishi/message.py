@@ -175,7 +175,7 @@ class SettingsMessage(Message):
                     for f, v in [
                         ("{:3s}", self.power),
                         ("{:4s}", self.mode),
-                        ("{:5s}", self.fan_speed),
+                        ("Fan {:5s}", self.fan_speed),
                         ("H Vane {:5s}", self.horizontal_vane),
                         ("V Vane {:5s}", self.vertical_vane)
                     ]
@@ -183,14 +183,15 @@ class SettingsMessage(Message):
                 ]
             ])
         else:
-            return (
-                    super().__str__() +
-                    f" {self.power} MODE:{self.mode} "+
-                    f"{self.set_point} ºC" +
-                    f"Fan: {self.fan_speed} " +
-                    f"H vane: {self.horizontal_vane} " +
-                    f"V vane: {self.vertical_vane}"
-            )
+            return " ".join([
+                    super().__str__(),
+                    f"{self.power:3s}",
+                    f"MODE:{self.mode:4s}",
+                    f"{self.set_point:5s} ºC"
+                    f"Fan: {self.fan_speed:5s}",
+                    f"H vane: {self.horizontal_vane:5s}",
+                    f"V vane: {self.vertical_vane:5s}"
+            ])
 
     def __eq__(self, other):
         return all([
@@ -232,8 +233,8 @@ class TemperatureMessage(Message):
         )
 
     def __str__(self):
-        return (
-                super().__str__() +
-                f" Room: {self.room_temp} ºC" +
+        return ' '.join([
+                super().__str__(),
+                f"Room: {self.room_temp} ºC",
                 f"???: {self.unknown_1}"
-        )
+        ])
