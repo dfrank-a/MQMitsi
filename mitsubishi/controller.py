@@ -8,21 +8,23 @@ from .message import Message, SettingsMessage, TemperatureMessage
 
 logger = logging.getLogger(__name__)
 
+
 class HeatPumpController:
     SETTINGS_ATTRS = [
-        'power', 'mode', 'set_point', 'fan_speed',
-        'vertical_vane', 'horizontal_vane'
+        "power",
+        "mode",
+        "set_point",
+        "fan_speed",
+        "vertical_vane",
+        "horizontal_vane",
     ]
 
     def __init__(self, serial_port, temp_refresh_rate=10, settings_refresh_rate=2):
         self.device = serial.Serial(
-            port=serial_port,
-            baudrate=2400,
-            parity=serial.PARITY_EVEN,
-            timeout=0
+            port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN, timeout=0
         )
         self.device.write(Message.start_command())
-        self.queue = None
+        self.device_queue = None
         self.temp_refresh_rate = temp_refresh_rate
         self.settings_refresh_rate = settings_refresh_rate
 
@@ -35,23 +37,23 @@ class HeatPumpController:
         TEMP_REQUEST = TemperatureMessage.info_request()
         while True:
             logger.debug("Requesting temp update")
-            await self.queue.put(TEMP_REQUEST)
+            await self.device_queue.put(TEMP_REQUEST)
             await asyncio.sleep(self.temp_refresh_rate)
 
     async def request_settings_update(self):
         SETTINGS_REQUEST = SettingsMessage.info_request()
         while True:
             logger.debug("Requesting settings update")
-            await self.queue.put(SETTINGS_REQUEST)
+            await self.device_queue.put(SETTINGS_REQUEST)
             await asyncio.sleep(self.settings_refresh_rate)
 
     async def submit_messages(self):
         while True:
             try:
-                message = self.queue.get_nowait()
+                message = self.device_queue.get_nowait()
                 logger.debug("Sending message")
                 self.device.write(message)
-                self.queue.task_done()
+                self.device_queue.task_done()
             except asyncio.QueueEmpty:
                 pass
             await asyncio.sleep(0)
@@ -86,14 +88,17 @@ class HeatPumpController:
 
     def loop(self):
         async def _loop():
-            self.queue = asyncio.Queue()
-            await asyncio.gather(*[
-                asyncio.create_task(task)
-                for task in [
-                    self.request_settings_update(),
-                    self.request_temperature_update(),
-                    self.submit_messages(),
-                    self.read_device_stream(),
+            self.device_queue = asyncio.Queue()
+            await asyncio.gather(
+                *[
+                    asyncio.create_task(task)
+                    for task in [
+                        self.request_settings_update(),
+                        self.request_temperature_update(),
+                        self.submit_messages(),
+                        self.read_device_stream(),
+                    ]
                 ]
-            ])
+            )
+
         asyncio.run(_loop())
