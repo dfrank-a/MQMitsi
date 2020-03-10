@@ -187,7 +187,7 @@ class SettingsMessage(Message):
             return " ".join([
                     super().__str__(),
                     f"{self.power:3s}",
-                    f"MODE:{self.mode:04}",
+                    f"MODE:{self.mode:4s}",
                     f"{self.set_point:02} ºC"
                     f"Fan: {self.fan_speed:5s}",
                     f"H vane: {self.horizontal_vane:5s}",
