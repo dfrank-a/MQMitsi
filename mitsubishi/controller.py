@@ -2,11 +2,18 @@ import asyncio
 import logging
 import serial
 
+from pprint import pformat
+
 from .message import Message, SettingsMessage, TemperatureMessage
 
 logger = logging.getLogger(__name__)
 
 class HeatPumpController:
+    SETTINGS_ATTRS = [
+        'power', 'mode', 'set_point', 'fan_speed',
+        'vertical_vane', 'horizontal_vane'
+    ]
+
     def __init__(self, serial_port, temp_refresh_rate=10, settings_refresh_rate=2):
         self.device = serial.Serial(
             port=serial_port,
@@ -18,6 +25,11 @@ class HeatPumpController:
         self.queue = None
         self.temp_refresh_rate = temp_refresh_rate
         self.settings_refresh_rate = settings_refresh_rate
+
+        self.room_temp = None
+        self.mystery_byte = None
+
+        self.current_pump_state = {}
 
     async def request_temperature_update(self):
         TEMP_REQUEST = TemperatureMessage.info_request()
@@ -49,7 +61,27 @@ class HeatPumpController:
             logger.debug("Checking messages")
             message = Message.from_stream(self.device)
             if message is not None:
-                logger.info(message)
+                if isinstance(message, TemperatureMessage):
+                    room_temp = message.room_temp
+                    mystery_byte = message.mystery_byte
+
+                    if self.room_temp != room_temp:
+                        logger.info(f"Room Temp: {room_temp}")
+                        self.room_temp = room_temp
+
+                    if self.mystery_byte != mystery_byte:
+                        logger.info(f"Mystery Temp Byte: {mystery_byte}")
+                        self.mystery_byte = mystery_byte
+                elif isinstance(message, SettingsMessage):
+                    changes = {
+                        attr: getattr(message, attr)
+                        for attr in self.SETTINGS_ATTRS
+                        if self.current_pump_state.get(attr) != getattr(message, attr)
+                    }
+                    if changes:
+                        self.current_pump_state.update(changes)
+                        logger.info(pformat(self.current_pump_state))
+                logger.debug(message)
             await asyncio.sleep(1)
 
     def loop(self):

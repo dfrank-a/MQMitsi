@@ -188,7 +188,7 @@ class SettingsMessage(Message):
                     super().__str__(),
                     f"{self.power:3s}",
                     f"MODE:{self.mode:4s}",
-                    f"{self.set_point:02} ºC"
+                    f"{self.set_point:02} ºC",
                     f"Fan: {self.fan_speed:5s}",
                     f"H vane: {self.horizontal_vane:5s}",
                     f"V vane: {self.vertical_vane:5s}"
@@ -215,7 +215,7 @@ class TemperatureMessage(Message):
 
     # this seems to change, in auto mode,
     # b1 when temp was at set point, b2 when over...maybe?
-    unknown_1 = message_property(6)
+    mystery_byte = message_property(6)
 
     @classmethod
     def is_temperature_message(cls, message):
@@ -235,7 +235,7 @@ class TemperatureMessage(Message):
 
     def __str__(self):
         return ' '.join([
-                super().__str__(),
-                f"Room: {self.room_temp} ºC",
-                f"???: {self.unknown_1}"
+            super().__str__(),
+            f"Room: {self.room_temp} ºC",
+            f"???: {self.mystery_byte}"
         ])

@@ -8,7 +8,7 @@ handler.setFormatter(
     logging.Formatter('%(asctime)s: %(message)s')
 )
 logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 HeatPumpController('/dev/serial0').loop()
