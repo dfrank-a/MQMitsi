@@ -174,7 +174,8 @@ class SettingsMessage(Message):
                     f.format(v)
                     for f, v in [
                         ("{:3s}", self.power),
-                        ("{:4s}", self.mode),
+                        ("MODE:{:4s}", self.mode),
+                        ("{:02} ºC", self.set_point),
                         ("Fan {:5s}", self.fan_speed),
                         ("H Vane {:5s}", self.horizontal_vane),
                         ("V Vane {:5s}", self.vertical_vane)
@@ -186,8 +187,8 @@ class SettingsMessage(Message):
             return " ".join([
                     super().__str__(),
                     f"{self.power:3s}",
-                    f"MODE:{self.mode:4s}",
-                    f"{self.set_point:5s} ºC"
+                    f"MODE:{self.mode:04}",
+                    f"{self.set_point:02} ºC"
                     f"Fan: {self.fan_speed:5s}",
                     f"H vane: {self.horizontal_vane:5s}",
                     f"V vane: {self.vertical_vane:5s}"
