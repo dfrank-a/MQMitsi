@@ -150,12 +150,10 @@ class SettingsMessage(Message):
 
     @classmethod
     def is_settings_message(cls, message):
-        msg_type = message[cls.COMMAND_TYPE]
-        subtype = message[cls.COMMAND_SUBTYPE]
-
-        return msg_type == cls.SEND_UPDATE or (
-            msg_type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
-            and subtype == cls.SETTINGS_INFO
+        message = Message(message)
+        return message.type == cls.SEND_UPDATE or (
+            message.type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
+            and message.subtype == cls.SETTINGS_INFO
         )
 
     @classmethod
@@ -220,11 +218,10 @@ class TemperatureMessage(Message):
 
     @classmethod
     def is_temperature_message(cls, message):
-        msg_type = message.type
-        subtype = message.subtype
+        message = Message(message)
         return (
-            msg_type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
-            and subtype == cls.ROOM_TEMP_INFO
+            message.type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
+            and message.subtype == cls.ROOM_TEMP_INFO
         )
 
     @classmethod
@@ -258,11 +255,10 @@ class OperationStatusMessage(Message):
 
     @classmethod
     def is_operation_message(cls, message):
-        msg_type = message.type
-        subtype = message.subtype
+        message = Message(message)
         return (
-                msg_type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
-                and subtype == cls.OPERATION_STATUS
+                message.type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
+                and message.subtype == cls.OPERATION_STATUS
         )
 
     @classmethod
