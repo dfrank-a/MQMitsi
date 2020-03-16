@@ -57,7 +57,6 @@ class Message(bytearray):
     @classmethod
     def from_stream(cls, device):
         byte = device.read()
-        logger.debug(f"Got byte {byte}")
         if byte and ord(byte) == cls.START_BYTE:
             device.timeout = None
             header = byte + device.read(cls.HEADER_LEN - 1)

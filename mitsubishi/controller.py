@@ -66,7 +66,7 @@ class HeatPumpController:
             message = Message.from_stream(self.device)
             if message is not None:
                 if isinstance(message, TemperatureMessage):
-                    self.debug(bytearray(message))
+                    logger.debug(bytearray(message))
                     room_temp = message.room_temp
                     if self.room_temp != room_temp:
                         logger.info(f"Room Temp: {room_temp}")
