@@ -49,6 +49,9 @@ class Message(bytearray):
         if TemperatureMessage.is_temperature_message(message):
             return TemperatureMessage(message)
 
+        if OperationStatusMessage.is_operation_message(message):
+            return OperationStatusMessage(message)
+
         return Message(message)
 
     @classmethod
