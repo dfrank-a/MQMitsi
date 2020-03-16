@@ -76,7 +76,7 @@ class HeatPumpController:
                         logger.info(f"Pump: {message.operating}")
                         self.operating = message.operating
                     if self.compressor_frequency != message.compressor_frequency:
-                        logger.info("Compressor frequency: {message.compressor_frequency}")
+                        logger.info(f"Compressor frequency: {message.compressor_frequency}")
                         self.compressor_frequency = message.compressor_frequency
                 elif isinstance(message, SettingsMessage):
                     changes = {
