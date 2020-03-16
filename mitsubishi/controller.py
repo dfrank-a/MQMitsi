@@ -4,7 +4,12 @@ import serial
 
 from pprint import pformat
 
-from .message import Message, SettingsMessage, TemperatureMessage
+from .message import (
+    Message,
+    SettingsMessage,
+    TemperatureMessage,
+    OperationStatusMessage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +24,11 @@ class HeatPumpController:
         "horizontal_vane",
     ]
 
-    def __init__(self, serial_port, temp_refresh_rate=10, settings_refresh_rate=2):
+    def __init__(self, serial_port,
+                 temp_refresh_rate=10,
+                 settings_refresh_rate=2,
+                 operation_status_refresh_rate=2
+             ):
         self.device = serial.Serial(
             port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN, timeout=0
         )
@@ -27,31 +36,25 @@ class HeatPumpController:
         self.device_queue = None
         self.temp_refresh_rate = temp_refresh_rate
         self.settings_refresh_rate = settings_refresh_rate
+        self.operation_status_refresh_rate = operation_status_refresh_rate
 
         self.room_temp = None
-        self.mystery_byte = None
+        self.operating = None
+        self.compressor_frequency = None
 
         self.current_pump_state = {}
 
-    async def request_temperature_update(self):
-        TEMP_REQUEST = TemperatureMessage.info_request()
+    async def queue_request_message(self, message, refresh_rate):
         while True:
-            logger.debug("Requesting temp update")
-            await self.device_queue.put(TEMP_REQUEST)
-            await asyncio.sleep(self.temp_refresh_rate)
-
-    async def request_settings_update(self):
-        SETTINGS_REQUEST = SettingsMessage.info_request()
-        while True:
-            logger.debug("Requesting settings update")
-            await self.device_queue.put(SETTINGS_REQUEST)
-            await asyncio.sleep(self.settings_refresh_rate)
+            logger.debug(f"Sending {repr(message)}")
+            await self.device_queue.put(message)
+            await asyncio.sleep(refresh_rate)
 
     async def submit_messages(self):
         while True:
             try:
                 message = self.device_queue.get_nowait()
-                logger.debug("Sending message")
+                logger.debug(f"Sending {repr(message)}")
                 self.device.write(message)
                 self.device_queue.task_done()
             except asyncio.QueueEmpty:
@@ -65,15 +68,16 @@ class HeatPumpController:
             if message is not None:
                 if isinstance(message, TemperatureMessage):
                     room_temp = message.room_temp
-                    mystery_byte = message.mystery_byte
-
                     if self.room_temp != room_temp:
                         logger.info(f"Room Temp: {room_temp}")
                         self.room_temp = room_temp
-
-                    if self.mystery_byte != mystery_byte:
-                        logger.info(f"Mystery Temp Byte: {mystery_byte}")
-                        self.mystery_byte = mystery_byte
+                elif isinstance(message, OperationStatusMessage):
+                    if self.operating != message.operating:
+                        logger.info(f"Pump: {message.operating}")
+                        self.operating = message.operating
+                    if self.compressor_frequency != message.compressor_frequency:
+                        logger.info("Compressor frequency: {message.compressor_frequency}")
+                        self.compressor_frequency = message.compressor_frequency
                 elif isinstance(message, SettingsMessage):
                     changes = {
                         attr: getattr(message, attr)
@@ -93,8 +97,18 @@ class HeatPumpController:
                 *[
                     asyncio.create_task(task)
                     for task in [
-                        self.request_settings_update(),
-                        self.request_temperature_update(),
+                        self.queue_request_message(
+                            TemperatureMessage.info_request(),
+                            self.temp_refresh_rate
+                        ),
+                        self.queue_request_message(
+                            SettingsMessage.info_request(),
+                            self.settings_refresh_rate
+                        ),
+                        self.queue_request_message(
+                            OperationStatusMessage.info_request(),
+                            self.operation_status_refresh_rate
+                        ),
                         self.submit_messages(),
                         self.read_device_stream(),
                     ]

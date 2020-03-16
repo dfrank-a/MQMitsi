@@ -95,33 +95,34 @@ class Message(bytearray):
         )
 
 
-def message_property(data_position, update_bitmask=None, lookup_table=tuple()):
+def message_property(data_position, update_bitmask=None, bitmask_index=6, lookup_table=tuple()):
 
     get_lookup = dict(lookup_table)
 
     if update_bitmask is not None:
-
         def _getter(self):
             if (
                 self.subtype == self.SETTINGS_INFO
-                or self[self.UPDATE_MASK_INDEX] & update_bitmask
+                or self[bitmask_index] & update_bitmask
             ):
                 value = self[self.HEADER_LEN + data_position]
                 return get_lookup.get(value, value)
             return None
 
     else:
-
         def _getter(self):
             value = self[self.HEADER_LEN + data_position]
             return get_lookup.get(value, value)
 
-    _setter = None
     if update_bitmask is not None:
         set_lookup = dict((j, i) for i, j in lookup_table)
 
         def _setter(self, value):
-            self[self.UPDATE_MASK_INDEX] |= update_bitmask
+            self[bitmask_index] |= update_bitmask
+            self[self.HEADER_LEN + data_position] = set_lookup[value]
+            self[-1] = Message.checksum(self[:-1])
+    else:
+        def _setter(self, value):
             self[self.HEADER_LEN + data_position] = set_lookup[value]
             self[-1] = Message.checksum(self[:-1])
 
@@ -133,8 +134,6 @@ class SettingsMessage(Message):
     SUBTYPE_UPDATE = 0x01
     SETTINGS_INFO = 0x02
 
-    UPDATE_MASK_INDEX = 6
-
     power = message_property(3, update_bitmask=1, lookup_table=POWER_LOOKUP)
     mode = message_property(4, update_bitmask=0b10, lookup_table=MODE_LOOKUP)
     set_point = message_property(5, update_bitmask=0b100, lookup_table=SET_POINT_LOOKUP)
@@ -143,7 +142,10 @@ class SettingsMessage(Message):
         7, update_bitmask=0b10000, lookup_table=VERTICAL_VANE_LOOKUP
     )
     horizontal_vane = message_property(
-        10, update_bitmask=0b10000000, lookup_table=HORIZONTAL_VANE_LOOKUP
+        10,
+        update_bitmask=0b1,
+        bitmask_index=7,
+        lookup_table=HORIZONTAL_VANE_LOOKUP
     )
 
     @classmethod
@@ -216,16 +218,10 @@ class SettingsMessage(Message):
 class TemperatureMessage(Message):
     ROOM_TEMP_INFO = 0x03
 
-    room_temp = message_property(3, lookup_table=ROOM_TEMP_LOOKUP)
-
-    # this seems to change, in auto mode,
-    # b1 when temp was at set point, b2 when over...maybe?
-    mystery_byte = message_property(6)
-
     @classmethod
     def is_temperature_message(cls, message):
-        msg_type = message[cls.COMMAND_TYPE]
-        subtype = message[cls.COMMAND_SUBTYPE]
+        msg_type = message.type
+        subtype = message.subtype
         return (
             msg_type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
             and subtype == cls.ROOM_TEMP_INFO
@@ -240,6 +236,49 @@ class TemperatureMessage(Message):
             [
                 super().__str__(),
                 f"Room: {self.room_temp} ºC",
-                f"???: {self.mystery_byte}",
             ]
         )
+
+    def __eq__(self, other):
+        return self.room_temp == other.room_temp
+
+    @property
+    def room_temp(self):
+        value = self[self.HEADER_LEN + 6]
+        if value:
+            return (value - 128) / 2
+        else:
+            value = self[self.HEADER_LEN + 3]
+            room_temp_lookup = dict(ROOM_TEMP_LOOKUP)
+            return room_temp_lookup.get(value, value)
+
+
+class OperationStatusMessage(Message):
+    OPERATION_STATUS = 0x06
+
+    @classmethod
+    def is_operation_message(cls, message):
+        msg_type = message.type
+        subtype = message.subtype
+        return (
+                msg_type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
+                and subtype == cls.OPERATION_STATUS
+        )
+
+    @classmethod
+    def info_request(cls):
+        return cls.build(cls.REQUEST_INFO, [cls.OPERATION_STATUS, *([0x00] * 15)])
+
+    @property
+    def operating(self):
+        return "ON" if self[self.HEADER_LEN + 4] else "OFF"
+
+    @property
+    def compressor_frequency(self):
+        return self[self.HEADER_LEN + 3]
+
+    def __eq__(self, other):
+        if not isinstance(other, OperationStatusMessage):
+            return False
+        return self.operating == other.operating \
+               and self.compressor_frequency == other.compressor_frequency

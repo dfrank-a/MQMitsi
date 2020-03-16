@@ -110,3 +110,12 @@ VERTICAL_VANE_LOOKUP = (
     (0x05, "5"),
     (0x07, "SWING"),
 )
+
+TIMER_MODE = (
+    (0x00, "NONE"),
+    (0x01, "OFF"),
+    (0x02, "ON"),
+    (0x03, "BOTH"),
+)
+
+TIMER_MINUTES_INCREMENT = 10
