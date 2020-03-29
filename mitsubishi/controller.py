@@ -38,7 +38,7 @@ class HeatPumpController:
              ):
         self.client = mqtt.Client(protocol=mqtt.MQTTv31)
         self.device = serial.Serial(
-            port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN, timeout=0
+            port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN
         )
         self.device.write(Message.start_command())
         self.device_queue = Queue()
