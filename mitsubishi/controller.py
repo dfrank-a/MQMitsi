@@ -1,8 +1,13 @@
-import asyncio
 import logging
 import serial
+import threading
+import queue
 
 from pprint import pformat
+from threading import Thread, Event
+from queue import Queue, Empty as QueueEmpty
+
+import paho.mqtt.client as mqtt
 
 from .message import (
     Message,
@@ -24,16 +29,21 @@ class HeatPumpController:
         "horizontal_vane",
     ]
 
-    def __init__(self, serial_port,
+    def __init__(self,
+                 serial_port='/dev/serial0',
+                 broker='127.0.0.1',
+                 broker_port=1883,
+                 topic_prefix='heat_pump',
                  temp_refresh_rate=10,
                  settings_refresh_rate=2,
                  operation_status_refresh_rate=2
              ):
+        self.client = mqtt.Client(protocol=mqtt.MQTTv31)
         self.device = serial.Serial(
             port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN, timeout=0
         )
         self.device.write(Message.start_command())
-        self.device_queue = None
+        self.device_queue = Queue()
         self.temp_refresh_rate = temp_refresh_rate
         self.settings_refresh_rate = settings_refresh_rate
         self.operation_status_refresh_rate = operation_status_refresh_rate
@@ -44,24 +54,23 @@ class HeatPumpController:
 
         self.current_pump_state = {}
 
-    async def queue_request_message(self, message, refresh_rate):
-        while True:
+    def queue_request_message(self, message, refresh_rate):
+        ticker = Event()
+        while not ticker.wait(refresh_rate):
             logger.debug(f"Sending {repr(message)}")
-            await self.device_queue.put(message)
-            await asyncio.sleep(refresh_rate)
+            self.device_queue.put(message)
 
-    async def submit_messages(self):
+    def submit_messages(self):
         while True:
             try:
-                message = self.device_queue.get_nowait()
+                message = self.device_queue.get()
                 logger.debug(f"Sending {repr(message)}")
                 self.device.write(message)
                 self.device_queue.task_done()
-            except asyncio.QueueEmpty:
+            except QueueEmpty:
                 pass
-            await asyncio.sleep(0)
 
-    async def read_device_stream(self):
+    def read_device_stream(self):
         while True:
             message = Message.from_stream(self.device)
             if message is not None:
@@ -88,31 +97,18 @@ class HeatPumpController:
                         self.current_pump_state.update(changes)
                         logger.info(pformat(self.current_pump_state))
                 logger.debug(message)
-            await asyncio.sleep(1)
 
     def loop(self):
-        async def _loop():
-            self.device_queue = asyncio.Queue()
-            await asyncio.gather(
-                *[
-                    asyncio.create_task(task)
-                    for task in [
-                        self.queue_request_message(
-                            TemperatureMessage.info_request(),
-                            self.temp_refresh_rate
-                        ),
-                        self.queue_request_message(
-                            SettingsMessage.info_request(),
-                            self.settings_refresh_rate
-                        ),
-                        self.queue_request_message(
-                            OperationStatusMessage.info_request(),
-                            self.operation_status_refresh_rate
-                        ),
-                        self.submit_messages(),
-                        self.read_device_stream(),
-                    ]
-                ]
-            )
+        Thread(target=self.read_device_stream).start()
+        Thread(target=self.submit_messages).start()
 
-        asyncio.run(_loop())
+        periodic_checks = [
+            (TemperatureMessage.info_request(), self.temp_refresh_rate),
+            (SettingsMessage.info_request(), self.settings_refresh_rate),
+            (OperationStatusMessage.info_request(), self.operation_status_refresh_rate)
+        ]
+        for periodic in periodic_checks:
+            Thread(
+                target=self.queue_request_message,
+                args=periodic
+            ).start()
