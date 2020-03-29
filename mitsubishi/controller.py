@@ -1,7 +1,5 @@
 import logging
 import serial
-import threading
-import queue
 
 from pprint import pformat
 from threading import Thread, Event
@@ -57,15 +55,15 @@ class HeatPumpController:
     def queue_request_message(self, message, refresh_rate):
         ticker = Event()
         while not ticker.wait(refresh_rate):
-            logger.debug(f"Sending {repr(message)}")
+            logger.debug(f"Queued {repr(message)}")
             self.device_queue.put(message)
 
     def submit_messages(self):
         while True:
             try:
                 message = self.device_queue.get()
-                logger.debug(f"Sending {repr(message)}")
                 self.device.write(message)
+                logger.debug(f"Sent {repr(message)}")
                 self.device_queue.task_done()
             except QueueEmpty:
                 pass
