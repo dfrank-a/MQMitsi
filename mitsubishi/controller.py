@@ -36,7 +36,12 @@ class HeatPumpController:
                  settings_refresh_rate=2,
                  operation_status_refresh_rate=2
              ):
+
+        self.topic_prefix = topic_prefix
         self.client = mqtt.Client(protocol=mqtt.MQTTv31)
+        self.client.on_connect = self.on_mqtt_connect
+        self.client.on_message = self.on_mqtt_message
+
         self.device = serial.Serial(
             port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN
         )
@@ -78,13 +83,31 @@ class HeatPumpController:
                     if self.room_temp != room_temp:
                         logger.info(f"Room Temp: {room_temp}")
                         self.room_temp = room_temp
+                        self.client.publish(
+                            topic=f"{self.topic_prefix}/room_temp",
+                            payload=self.room_temp,
+                            qos=1,
+                            retain=True
+                        )
                 elif isinstance(message, OperationStatusMessage):
                     if self.operating != message.operating:
                         logger.info(f"Pump: {message.operating}")
                         self.operating = message.operating
+                        self.client.publish(
+                            topic=f"{self.topic_prefix}/compressor/power",
+                            payload=self.operating,
+                            qos=1,
+                            retain=True
+                        )
                     if self.compressor_frequency != message.compressor_frequency:
                         logger.info(f"Compressor frequency: {message.compressor_frequency}")
                         self.compressor_frequency = message.compressor_frequency
+                        self.client.publish(
+                            topic=f"{self.topic_prefix}/compressor/frequency",
+                            payload=self.operating,
+                            qos=1,
+                            retain=True
+                        )
                 elif isinstance(message, SettingsMessage):
                     changes = {
                         attr: getattr(message, attr)
@@ -94,7 +117,36 @@ class HeatPumpController:
                     if changes:
                         self.current_pump_state.update(changes)
                         logger.info(pformat(self.current_pump_state))
+                        for attr, value in changes.items():
+                            self.client.publish(
+                                topic=f"{self.topic_prefix}/compressor/{attr}",
+                                payload=value,
+                                qos=1,
+                                retain=True
+                            )
                 logger.debug(message)
+
+    def on_mqtt_connect(self, client: mqtt.Client, *args, **kwargs):
+        will_topic = f'{topic_prefix}/connected'
+        client.will_set(will_topic, 0, qos=1, retain=True)
+        client.publish(will_topic, 1, qos=1, retain=True)
+        client.subscribe(f"{self.topic_prefix}/update/#")
+
+    def on_mqtt_message(self, _, __, msg):
+        logger.debug(f"MQTT Message: {msg.topic}: {msg.payload}")
+
+        attribute = msg.topic.split('/')[-1]
+        if attribute in self.SETTINGS_ATTRS:
+            value = msg.payload
+            if attribute == 'set_point':
+                value = float(value)
+
+            update_command = SettingsMessage.update_command()
+            try:
+                setattr(update_command, attribute, value)
+                self.device_queue.put(update_command)
+            except Exception:
+                pass
 
     def loop(self):
         Thread(target=self.read_device_stream).start()
@@ -110,3 +162,5 @@ class HeatPumpController:
                 target=self.queue_request_message,
                 args=periodic
             ).start()
+
+        self.client.loop_forever()
