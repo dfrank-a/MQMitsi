@@ -129,7 +129,7 @@ class HeatPumpController:
                 logger.debug(message)
 
     def on_mqtt_connect(self, client: mqtt.Client, *args, **kwargs):
-        will_topic = f'{topic_prefix}/connected'
+        will_topic = f'{self.topic_prefix}/connected'
         client.will_set(will_topic, 0, qos=1, retain=True)
         client.publish(will_topic, 1, qos=1, retain=True)
         client.subscribe(f"{self.topic_prefix}/update/#")
@@ -167,4 +167,4 @@ class HeatPumpController:
             ).start()
 
         self.client.connect(host=self.broker, port=self.broker_port)
-        self.client.loop_start()
+        self.client.loop_forever()
