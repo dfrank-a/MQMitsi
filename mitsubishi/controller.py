@@ -79,6 +79,7 @@ class HeatPumpController:
         while True:
             message = Message.from_stream(self.device)
             if message is not None:
+                logger.debug(f"Received {repr(message)}")
                 if isinstance(message, TemperatureMessage):
                     logger.debug(bytearray(message))
                     room_temp = message.room_temp
@@ -126,7 +127,6 @@ class HeatPumpController:
                                 qos=1,
                                 retain=True
                             )
-                logger.debug(message)
 
     def on_mqtt_connect(self, client: mqtt.Client, *args, **kwargs):
         will_topic = f'{self.topic_prefix}/connected'
