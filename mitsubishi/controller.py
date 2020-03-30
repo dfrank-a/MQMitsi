@@ -135,7 +135,7 @@ class HeatPumpController:
         client.subscribe(f"{self.topic_prefix}/update/#")
 
     def on_mqtt_message(self, _, __, msg):
-        logger.debug(f"MQTT Message: {msg.topic}: {msg.payload}")
+        logger.info(f"MQTT Message: {msg.topic}: {msg.payload}")
 
         attribute = msg.topic.split('/')[-1]
         if attribute in self.SETTINGS_ATTRS:
