@@ -2,6 +2,7 @@ import logging
 import serial
 
 from pprint import pformat
+from random import random
 from threading import Thread, Event
 from queue import Queue, Empty as QueueEmpty
 
@@ -63,7 +64,7 @@ class HeatPumpController:
 
     def queue_request_message(self, message, refresh_rate):
         ticker = Event()
-        while not ticker.wait(refresh_rate):
+        while not ticker.wait(refresh_rate + random() / 10):
             logger.debug(f"Queued {repr(message)}")
             self.device_queue.put(message)
 
