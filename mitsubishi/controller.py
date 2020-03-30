@@ -133,6 +133,7 @@ class HeatPumpController:
         client.will_set(will_topic, 0, qos=1, retain=True)
         client.publish(will_topic, 1, qos=1, retain=True)
         client.subscribe(f"{self.topic_prefix}/update/#")
+        logger.info("MQTT Connected.")
 
     def on_mqtt_message(self, _, __, msg):
         logger.info(f"MQTT Message: {msg.topic}: {msg.payload}")
