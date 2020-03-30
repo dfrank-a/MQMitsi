@@ -165,5 +165,5 @@ class HeatPumpController:
                 args=periodic
             ).start()
 
-        self.client.connnect(self.broker, self.broker_port)
+        self.client.connect(self.broker, port=self.broker_port)
         self.client.loop_forever()
