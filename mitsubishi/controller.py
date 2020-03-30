@@ -167,4 +167,4 @@ class HeatPumpController:
             ).start()
 
         self.client.connect(host=self.broker, port=self.broker_port)
-        self.client.loop_forever()
+        self.client.loop_start()
