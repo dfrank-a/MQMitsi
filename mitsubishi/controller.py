@@ -140,7 +140,7 @@ class HeatPumpController:
 
         attribute = msg.topic.split('/')[-1]
         if attribute in self.SETTINGS_ATTRS:
-            value = msg.payload
+            value = msg.payload.decode('utf-8')
             if attribute == 'set_point':
                 value = float(value)
 
