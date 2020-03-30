@@ -38,6 +38,8 @@ class HeatPumpController:
              ):
 
         self.topic_prefix = topic_prefix
+        self.broker = broker
+        self.broker_port = broker_port
         self.client = mqtt.Client(protocol=mqtt.MQTTv31)
         self.client.on_connect = self.on_mqtt_connect
         self.client.on_message = self.on_mqtt_message
@@ -163,4 +165,5 @@ class HeatPumpController:
                 args=periodic
             ).start()
 
+        self.client.connnect(self.broker, self.broker_port)
         self.client.loop_forever()
