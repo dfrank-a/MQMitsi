@@ -48,6 +48,8 @@ class HeatPumpController:
             port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN
         )
         self.device.write(Message.start_command())
+        Message.from_stream(self.device)
+
         self.device_queue = Queue()
         self.temp_refresh_rate = temp_refresh_rate
         self.settings_refresh_rate = settings_refresh_rate
