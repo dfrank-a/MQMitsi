@@ -100,7 +100,7 @@ class HeatPumpController:
                         logger.info(f"Pump: {message.operating}")
                         self.operating = message.operating
                         self.client.publish(
-                            topic=f"{self.topic_prefix}/compressor/power",
+                            topic=f"{self.topic_prefix}/compressor/state",
                             payload=self.operating,
                             qos=1,
                             retain=True
@@ -110,7 +110,7 @@ class HeatPumpController:
                         self.compressor_frequency = message.compressor_frequency
                         self.client.publish(
                             topic=f"{self.topic_prefix}/compressor/frequency",
-                            payload=self.operating,
+                            payload=self.compressor_frequency,
                             qos=1,
                             retain=True
                         )
@@ -125,7 +125,7 @@ class HeatPumpController:
                         logger.info(pformat(self.current_pump_state))
                         for attr, value in changes.items():
                             self.client.publish(
-                                topic=f"{self.topic_prefix}/compressor/{attr}",
+                                topic=f"{self.topic_prefix}/settings/{attr}",
                                 payload=value,
                                 qos=1,
                                 retain=True
