@@ -78,7 +78,7 @@ class HeatPumpController:
                 self.device_queue.task_done()
             except QueueEmpty:
                 pass
-            sleep(0.1)
+            sleep(0)
 
     def read_device_stream(self):
         while True:
