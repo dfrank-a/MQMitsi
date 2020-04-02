@@ -149,13 +149,7 @@ class HeatPumpController:
             setattr(update_command, attribute, value)
 
             logger.info(f"Submitting update of {attribute} to {value}")
-
-            for _ in range(3):
-                self.device_queue.put(update_command)
-                sleep(self.settings_refresh_rate * 2)
-                if self.current_pump_state[attribute] == value:
-                    break
-                logger.info(f"Resubmitting update of {attribute} to {value}")
+            self.device_queue.put(update_command)
 
     def loop(self):
         self.device_queue.put(Message.start_command())
