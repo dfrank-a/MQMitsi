@@ -55,11 +55,14 @@ class Message(bytearray):
     def from_stream(cls, device):
         byte = device.read()
         if byte and ord(byte) == cls.START_BYTE:
+            old_timeout = device.timeout
+            device.timeout = None
             header = byte + device.read(cls.HEADER_LEN - 1)
             data_len = header[cls.DATA_LEN]
             message = header + device.read(data_len + 1)
             if cls.valid(message):
                 return cls.decode(message)
+            device.timeout = old_timeout
         return None
 
     @classmethod

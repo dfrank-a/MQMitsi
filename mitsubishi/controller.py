@@ -47,7 +47,7 @@ class HeatPumpController:
         self.client.on_message = self.on_mqtt_message
 
         self.device = serial.Serial(
-            port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN
+            port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN, timeout=0
         )
         self.device.write(Message.start_command())
         Message.from_stream(self.device)
@@ -82,11 +82,11 @@ class HeatPumpController:
 
     def read_device_stream(self):
         while True:
-            message = Message.from_stream(self.device)
-            if message is not None:
-                logger.debug(f"Received {repr(message)}")
-                if isinstance(message, TemperatureMessage):
-                    room_temp = message.room_temp
+            response = Message.from_stream(self.device)
+            if response is not None:
+                logger.debug(f"Received {repr(response)}")
+                if isinstance(response, TemperatureMessage):
+                    room_temp = response.room_temp
                     if self.room_temp != room_temp:
                         logger.info(f"Room Temp: {room_temp}")
                         self.room_temp = room_temp
@@ -96,29 +96,29 @@ class HeatPumpController:
                             qos=1,
                             retain=True
                         )
-                elif isinstance(message, OperationStatusMessage):
-                    if self.operating != message.operating:
-                        logger.info(f"Pump: {message.operating}")
-                        self.operating = message.operating
+                elif isinstance(response, OperationStatusMessage):
+                    if self.operating != response.operating:
+                        logger.info(f"Pump: {response.operating}")
+                        self.operating = response.operating
                         self.client.publish(
                             topic=f"{self.topic_prefix}/compressor/state",
                             payload=self.operating,
                             qos=1,
                             retain=True
                         )
-                    if self.compressor_frequency != message.compressor_frequency:
-                        self.compressor_frequency = message.compressor_frequency
+                    if self.compressor_frequency != response.compressor_frequency:
+                        self.compressor_frequency = response.compressor_frequency
                         self.client.publish(
                             topic=f"{self.topic_prefix}/compressor/frequency",
                             payload=self.compressor_frequency,
                             qos=1,
                             retain=True
                         )
-                elif isinstance(message, SettingsMessage):
+                elif isinstance(response, SettingsMessage):
                     changes = {
-                        attr: getattr(message, attr)
+                        attr: getattr(response, attr)
                         for attr in self.SETTINGS_ATTRS
-                        if self.current_pump_state.get(attr) != getattr(message, attr)
+                        if self.current_pump_state.get(attr) != getattr(response, attr)
                     }
                     if changes:
                         self.current_pump_state.update(changes)
