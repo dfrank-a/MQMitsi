@@ -64,11 +64,10 @@ class HeatPumpController:
         self.current_pump_state = {}
 
     def queue_request_message(self, message, refresh_rate):
-        ticker = Event()
-        while not ticker.wait(refresh_rate + random() / 10):
+        while True:
             logger.debug(f"Queued {repr(message)}")
             self.device_queue.put(message)
-            sleep(0)
+            sleep(refresh_rate + random() / 10)
 
     def submit_messages(self):
         while True:
@@ -153,16 +152,14 @@ class HeatPumpController:
             setattr(update_command, attribute, value)
 
             logger.info(f"Submitting update of {attribute} to {value}")
-            self.device_queue.put(update_command)
-            sleep(0)
 
-            ticker = Event()
-            while not ticker.wait(self.settings_refresh_rate * 2):
+            for _ in range(3):
+                self.device_queue.put(update_command)
+                sleep(self.settings_refresh_rate * 2)
                 if self.current_pump_state[attribute] == value:
                     break
                 logger.info(f"Resubmitting update of {attribute} to {value}")
-                self.device_queue.put(update_command)
-                sleep(0)
+
 
 
     def loop(self):
