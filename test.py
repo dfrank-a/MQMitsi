@@ -11,4 +11,4 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 
-HeatPumpController('/dev/serial0', operation_status_refresh_rate=3).loop()
+HeatPumpController().loop()

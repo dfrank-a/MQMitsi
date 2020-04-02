@@ -152,7 +152,7 @@ class HeatPumpController:
                 setattr(update_command, attribute, value)
                 self.device_queue.put(update_command)
             except Exception:
-                pass
+                logger.exception('Problem sending update')
 
     def loop(self):
         Thread(target=self.read_device_stream).start()
