@@ -47,10 +47,8 @@ class HeatPumpController:
         self.client.on_message = self.on_mqtt_message
 
         self.device = serial.Serial(
-            port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN, timeout=0
+            port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN
         )
-        self.device.write(Message.start_command())
-        Message.from_stream(self.device)
 
         self.device_queue = Queue()
         self.temp_refresh_rate = temp_refresh_rate
@@ -69,68 +67,67 @@ class HeatPumpController:
             self.device_queue.put(message)
             sleep(refresh_rate + random() / 10)
 
-    def submit_messages(self):
+    def process_messages(self):
         while True:
             try:
                 message = self.device_queue.get()
                 self.device.write(message)
                 logger.debug(f"Sent {repr(message)}")
+                self.read_device_stream()
                 self.device_queue.task_done()
             except QueueEmpty:
                 pass
             sleep(0)
 
     def read_device_stream(self):
-        while True:
-            response = Message.from_stream(self.device)
-            if response is not None:
-                logger.debug(f"Received {repr(response)}")
-                if isinstance(response, TemperatureMessage):
-                    room_temp = response.room_temp
-                    if self.room_temp != room_temp:
-                        logger.info(f"Room Temp: {room_temp}")
-                        self.room_temp = room_temp
+        response = Message.from_stream(self.device)
+        if response is not None:
+            logger.debug(f"Received {repr(response)}")
+            if isinstance(response, TemperatureMessage):
+                room_temp = response.room_temp
+                if self.room_temp != room_temp:
+                    logger.info(f"Room Temp: {room_temp}")
+                    self.room_temp = room_temp
+                    self.client.publish(
+                        topic=f"{self.topic_prefix}/room_temp",
+                        payload=self.room_temp,
+                        qos=1,
+                        retain=True
+                    )
+            elif isinstance(response, OperationStatusMessage):
+                if self.operating != response.operating:
+                    logger.info(f"Pump: {response.operating}")
+                    self.operating = response.operating
+                    self.client.publish(
+                        topic=f"{self.topic_prefix}/compressor/state",
+                        payload=self.operating,
+                        qos=1,
+                        retain=True
+                    )
+                if self.compressor_frequency != response.compressor_frequency:
+                    self.compressor_frequency = response.compressor_frequency
+                    self.client.publish(
+                        topic=f"{self.topic_prefix}/compressor/frequency",
+                        payload=self.compressor_frequency,
+                        qos=1,
+                        retain=True
+                    )
+            elif isinstance(response, SettingsMessage):
+                changes = {
+                    attr: getattr(response, attr)
+                    for attr in self.SETTINGS_ATTRS
+                    if self.current_pump_state.get(attr) != getattr(response, attr)
+                }
+                if changes:
+                    self.current_pump_state.update(changes)
+                    logger.info(pformat(self.current_pump_state))
+                    for attr, value in changes.items():
                         self.client.publish(
-                            topic=f"{self.topic_prefix}/room_temp",
-                            payload=self.room_temp,
+                            topic=f"{self.topic_prefix}/settings/{attr}",
+                            payload=value,
                             qos=1,
                             retain=True
                         )
-                elif isinstance(response, OperationStatusMessage):
-                    if self.operating != response.operating:
-                        logger.info(f"Pump: {response.operating}")
-                        self.operating = response.operating
-                        self.client.publish(
-                            topic=f"{self.topic_prefix}/compressor/state",
-                            payload=self.operating,
-                            qos=1,
-                            retain=True
-                        )
-                    if self.compressor_frequency != response.compressor_frequency:
-                        self.compressor_frequency = response.compressor_frequency
-                        self.client.publish(
-                            topic=f"{self.topic_prefix}/compressor/frequency",
-                            payload=self.compressor_frequency,
-                            qos=1,
-                            retain=True
-                        )
-                elif isinstance(response, SettingsMessage):
-                    changes = {
-                        attr: getattr(response, attr)
-                        for attr in self.SETTINGS_ATTRS
-                        if self.current_pump_state.get(attr) != getattr(response, attr)
-                    }
-                    if changes:
-                        self.current_pump_state.update(changes)
-                        logger.info(pformat(self.current_pump_state))
-                        for attr, value in changes.items():
-                            self.client.publish(
-                                topic=f"{self.topic_prefix}/settings/{attr}",
-                                payload=value,
-                                qos=1,
-                                retain=True
-                            )
-            sleep(0)
 
     def on_mqtt_connect(self, client: mqtt.Client, *args, **kwargs):
         will_topic = f'{self.topic_prefix}/connected'
@@ -160,11 +157,9 @@ class HeatPumpController:
                     break
                 logger.info(f"Resubmitting update of {attribute} to {value}")
 
-
-
     def loop(self):
-        Thread(target=self.read_device_stream).start()
-        Thread(target=self.submit_messages).start()
+        self.device_queue.put(Message.start_command())
+        Thread(target=self.process_messages).start()
 
         periodic_checks = [
             (TemperatureMessage.info_request(), self.temp_refresh_rate),
