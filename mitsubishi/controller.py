@@ -3,8 +3,9 @@ import serial
 
 from pprint import pformat
 from random import random
-from threading import Thread, Event
 from queue import Queue, Empty as QueueEmpty
+from time import sleep
+from threading import Thread, Event
 
 import paho.mqtt.client as mqtt
 
@@ -84,7 +85,6 @@ class HeatPumpController:
             if message is not None:
                 logger.debug(f"Received {repr(message)}")
                 if isinstance(message, TemperatureMessage):
-                    logger.debug(bytearray(message))
                     room_temp = message.room_temp
                     if self.room_temp != room_temp:
                         logger.info(f"Room Temp: {room_temp}")
@@ -106,7 +106,6 @@ class HeatPumpController:
                             retain=True
                         )
                     if self.compressor_frequency != message.compressor_frequency:
-                        logger.info(f"Compressor frequency: {message.compressor_frequency}")
                         self.compressor_frequency = message.compressor_frequency
                         self.client.publish(
                             topic=f"{self.topic_prefix}/compressor/frequency",
@@ -148,11 +147,13 @@ class HeatPumpController:
                 value = float(value)
 
             update_command = SettingsMessage.update_command()
-            try:
-                setattr(update_command, attribute, value)
+            setattr(update_command, attribute, value)
+
+            while self.current_pump_state[attribute] != value:
+                logger.debug(f"Submitting update of {attribute} to {value}")
                 self.device_queue.put(update_command)
-            except Exception:
-                logger.exception('Problem sending update')
+                sleep(self.settings_refresh_rate)
+
 
     def loop(self):
         Thread(target=self.read_device_stream).start()

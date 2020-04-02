@@ -10,9 +10,6 @@ from .lookup import (
     VERTICAL_VANE_LOOKUP,
 )
 
-logger = logging.getLogger(__name__)
-
-
 class Message(bytearray):
     HEADER_LEN = 5
 
