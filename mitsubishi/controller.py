@@ -68,6 +68,7 @@ class HeatPumpController:
         while not ticker.wait(refresh_rate + random() / 10):
             logger.debug(f"Queued {repr(message)}")
             self.device_queue.put(message)
+            sleep(0)
 
     def submit_messages(self):
         while True:
@@ -78,6 +79,7 @@ class HeatPumpController:
                 self.device_queue.task_done()
             except QueueEmpty:
                 pass
+            sleep(0)
 
     def read_device_stream(self):
         while True:
@@ -129,6 +131,7 @@ class HeatPumpController:
                                 qos=1,
                                 retain=True
                             )
+            sleep(0)
 
     def on_mqtt_connect(self, client: mqtt.Client, *args, **kwargs):
         will_topic = f'{self.topic_prefix}/connected'
@@ -151,6 +154,7 @@ class HeatPumpController:
 
             logger.info(f"Submitting update of {attribute} to {value}")
             self.device_queue.put(update_command)
+            sleep(0)
 
             ticker = Event()
             while not ticker.wait(self.settings_refresh_rate * 2):
@@ -158,6 +162,7 @@ class HeatPumpController:
                     break
                 logger.info(f"Resubmitting update of {attribute} to {value}")
                 self.device_queue.put(update_command)
+                sleep(0)
 
 
     def loop(self):
