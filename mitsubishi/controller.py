@@ -150,7 +150,7 @@ class HeatPumpController:
             setattr(update_command, attribute, value)
 
             while self.current_pump_state[attribute] != value:
-                logger.debug(f"Submitting update of {attribute} to {value}")
+                logger.info(f"Submitting update of {attribute} to {value}")
                 self.device_queue.put(update_command)
                 sleep(self.settings_refresh_rate)
 
