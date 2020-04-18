@@ -5,25 +5,34 @@ import adafruit_dht
 import board
 import paho.mqtt.client as mqtt
 
-logger = logging.getLogger('dh11')
-logger.addHandler(logging.StreamHandler)
+logger = logging.getLogger("dh11")
+handler = logging.StreamHandler()
+handler.setFormatter(
+    logging.Formatter('%(asctime)s: %(message)s')
+)
+logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 
 def on_mqtt_connect(topic_prefix):
     def _func(client, *args, **kwargs):
-        will_topic = f'{topic_prefix}/connected'
+        will_topic = f"{topic_prefix}/connected"
         client.will_set(will_topic, 0, qos=1, retain=True)
         client.publish(will_topic, 1, qos=1, retain=True)
         logger.info("MQTT Connected.")
+
     return _func
+
 
 def on_mqtt_disconnect(topic_prefix):
     def _func(client, *args, **kwargs):
-        will_topic = f'{topic_prefix}/connected'
+        will_topic = f"{topic_prefix}/connected"
         client.publish(will_topic, 0, qos=1, retain=True)
 
-def __main__(broker='127.0.0.1', broker_port=1883, topic_prefix='growroom/sensors/dh11'):
+
+def __main__(
+    broker="127.0.0.1", broker_port=1883, topic_prefix="growroom/sensors/dh11"
+):
     client = mqtt.Client(protocol=mqtt.MQTTv31)
     client.on_connect = on_mqtt_connect(topic_prefix)
     client.on_disconnect = on_mqtt_disconnect(topic_prefix)
@@ -52,5 +61,6 @@ def __main__(broker='127.0.0.1', broker_port=1883, topic_prefix='growroom/sensor
             print(error.args[0])
         time.sleep(2.0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     __main__()
