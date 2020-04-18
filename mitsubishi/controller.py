@@ -5,7 +5,7 @@ from pprint import pformat
 from random import random
 from queue import Queue, Empty as QueueEmpty
 from time import sleep
-from threading import Thread, Event
+from threading import Thread
 
 import paho.mqtt.client as mqtt
 
