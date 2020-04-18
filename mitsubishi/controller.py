@@ -45,6 +45,7 @@ class HeatPumpController:
         self.client = mqtt.Client(protocol=mqtt.MQTTv31)
         self.client.on_connect = self.on_mqtt_connect
         self.client.on_message = self.on_mqtt_message
+        self.client.on_disconnect = self.on_mqtt_disconnect
 
         self.device = serial.Serial(
             port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN
@@ -150,6 +151,10 @@ class HeatPumpController:
 
             logger.info(f"Submitting update of {attribute} to {value}")
             self.device_queue.put(update_command)
+
+    def on_mqtt_disconnect(self, client: mqtt.Client, *args, **kwargs):
+        will_topic = f'{self.topic_prefix}/connected'
+        client.publish(will_topic, 0, qos=1, retain=True)
 
     def loop(self):
         self.device_queue.put(Message.start_command())
