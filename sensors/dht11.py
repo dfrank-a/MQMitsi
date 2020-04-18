@@ -54,6 +54,7 @@ def __main__(
                 client.publish(f"topic_prefix/temperature", temperature_c, qos=1)
 
             if cur_humidity != humidity:
+                humidity = cur_humidity
                 logger.info(f"Humidity: {humidity}%")
                 client.publish(f"topic_prefix/humidity", humidity, qos=1)
         except RuntimeError as error:
