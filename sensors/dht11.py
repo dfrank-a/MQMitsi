@@ -41,27 +41,30 @@ def __main__(
     dhtDevice = adafruit_dht.DHT11(board.D4)
 
     temperature_c, humidity = (None, None)
-    while True:
-        try:
-            # Print the values to the serial port
-            cur_temperature_c = dhtDevice.temperature
-            cur_humidity = dhtDevice.humidity
 
-            if cur_temperature_c != temperature_c:
-                temperature_c = cur_temperature_c
-                temperature_f = round(cur_temperature_c * (9 / 5) + 32, 2)
-                logger.info(f"Temp: {temperature_f:.1f} F / {temperature_c:.1f} C")
-                client.publish(f"{topic_prefix}/temperature", temperature_c, qos=1)
+    try:
+        while True:
+            try:
+                # Print the values to the serial port
+                cur_temperature_c = dhtDevice.temperature
+                cur_humidity = dhtDevice.humidity
 
-            if cur_humidity != humidity:
-                humidity = cur_humidity
-                logger.info(f"Humidity: {humidity}%")
-                client.publish(f"{topic_prefix}/humidity", humidity, qos=1)
-        except RuntimeError as error:
-            # Errors happen fairly often, DHT's are hard to read, just keep going
-            print(error.args[0])
-        time.sleep(2.0)
+                if cur_temperature_c != temperature_c:
+                    temperature_c = cur_temperature_c
+                    temperature_f = round(cur_temperature_c * (9 / 5) + 32, 2)
+                    logger.info(f"Temp: {temperature_f:.1f} F / {temperature_c:.1f} C")
+                    client.publish(f"{topic_prefix}/temperature", temperature_c, qos=1)
 
+                if cur_humidity != humidity:
+                    humidity = cur_humidity
+                    logger.info(f"Humidity: {humidity}%")
+                    client.publish(f"{topic_prefix}/humidity", humidity, qos=1)
+            except RuntimeError as error:
+                # Errors happen fairly often, DHT's are hard to read, just keep going
+                print(error.args[0])
+            time.sleep(2.0)
+    except KeyboardInterrupt:
+        client.disconnect()
 
 if __name__ == "__main__":
     __main__()
