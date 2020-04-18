@@ -51,3 +51,6 @@ def __main__(broker='127.0.0.1', broker_port=1883, topic_prefix='growroom/sensor
             # Errors happen fairly often, DHT's are hard to read, just keep going
             print(error.args[0])
         time.sleep(2.0)
+
+if __name__ == '__main__':
+    __main__()
