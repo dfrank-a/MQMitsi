@@ -44,7 +44,7 @@ class DHT11:
 
         client.on_connect = on_mqtt_connect(topic_prefix)
         client.on_disconnect = on_mqtt_disconnect(topic_prefix)
-        client.connect(host=broker, port=broker_port)
+        client.connect_async(host=broker, port=broker_port)
 
         self.mqtt_client=client
         self.device = adafruit_dht.DHT11(getattr(board, data_pin))
