@@ -2,24 +2,16 @@ import logging
 import time
 
 import adafruit_dht
-import board
 import paho.mqtt.client as mqtt
 
-logger = logging.getLogger("dh11")
-handler = logging.StreamHandler()
-handler.setFormatter(
-    logging.Formatter('%(asctime)s: %(message)s')
-)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-
+logger = logging.getLogger("dht11")
 
 def on_mqtt_connect(topic_prefix):
     def _func(client, *args, **kwargs):
         will_topic = f"{topic_prefix}/connected"
         client.will_set(will_topic, 0, qos=1, retain=True)
         client.publish(will_topic, 1, qos=1, retain=True)
-        logger.info("MQTT Connected.")
+        logger.debug("MQTT Connected.")
     return _func
 
 
@@ -31,16 +23,28 @@ def on_mqtt_disconnect(topic_prefix):
 
 
 def loop(
-    broker="127.0.0.1",
-    broker_port=1883,
-    topic_prefix="grow_room/sensors/dh11"
+    data_pin,
+    broker,
+    broker_port,
+    topic_prefix,
+    protocol=mqtt.MQTTv31,
+    cafile=None,
+    username=None,
+    password=None,
 ):
-    client = mqtt.Client(protocol=mqtt.MQTTv31)
+    client = mqtt.Client(protocol=protocol)
+
+    if cafile is not None:
+        client.tls_set(cafile=cafile)
+
+    if username is not None:
+        client.username_pw_set(username, password=password)
+
     client.on_connect = on_mqtt_connect(topic_prefix)
     client.on_disconnect = on_mqtt_disconnect(topic_prefix)
     client.connect(host=broker, port=broker_port)
 
-    dhtDevice = adafruit_dht.DHT11(board.D4)
+    dhtDevice = adafruit_dht.DHT11(data_pin)
 
     temperature_c, humidity = (None, None)
 
