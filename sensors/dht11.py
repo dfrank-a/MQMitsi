@@ -75,7 +75,7 @@ class DHT11:
     def start(self):
         self.mqtt_client.loop_start()
         self.running = True
-        Thread(self._poll_status).start()
+        Thread(target=self._poll_status).start()
         atexit.register(self._loop_stop)
 
     def _loop_stop(self):
