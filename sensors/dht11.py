@@ -48,6 +48,7 @@ class DHT11:
 
         self.mqtt_client=client
         self.device = adafruit_dht.DHT11(getattr(board, data_pin))
+        self.topic_prefix = topic_prefix
         self.running = None
 
     def _poll_status(self):
@@ -61,12 +62,12 @@ class DHT11:
                 if cur_temperature_c != temperature_c:
                     temperature_c = cur_temperature_c
                     logger.info(f"Temperature: {temperature_c}")
-                    self.mqtt_client.publish(f"{topic_prefix}/temperature", temperature_c, qos=1)
+                    self.mqtt_client.publish(f"{self.topic_prefix}/temperature", temperature_c, qos=1)
 
                 if cur_humidity != humidity:
                     humidity = cur_humidity
                     logger.info(f"Humidity: {humidity}%")
-                    self.mqtt_client.publish(f"{topic_prefix}/humidity", humidity, qos=1)
+                    self.mqtt_client.publish(f"{self.topic_prefix}/humidity", humidity, qos=1)
             except RuntimeError as error:
                 # Errors happen fairly often, DHT's are hard to read, just keep going
                 logger.debug(error.args[0])
