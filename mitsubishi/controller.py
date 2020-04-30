@@ -169,6 +169,7 @@ class HeatPumpController:
 
     def start(self):
         self.running = True
+        self.client.loop_start()
         self.device_queue.put(Message.start_command())
         Thread(target=self.process_messages).start()
 
@@ -183,7 +184,6 @@ class HeatPumpController:
                 args=periodic
             ).start()
 
-        self.client.loop_start()
         atexit.register(self._loop_stop)
 
     def _loop_stop(self):
