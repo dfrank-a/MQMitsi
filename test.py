@@ -7,7 +7,7 @@ from sensors.dht11 import DHT11
 logger = logging.getLogger('')
 handler = logging.StreamHandler()
 handler.setFormatter(
-    logging.Formatter('%(asctime)s [%(level)s %(name)s] %(message)s')
+    logging.Formatter('%(asctime)s [%(levelname)s %(name)s] %(message)s')
 )
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
