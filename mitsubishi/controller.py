@@ -38,6 +38,7 @@ class HeatPumpController:
                  protocol=mqtt.MQTTv31,
                  username=None,
                  password=None,
+                 ca_certs=None,
                  temp_refresh_rate=10,
                  settings_refresh_rate=2,
                  operation_status_refresh_rate=2
@@ -47,6 +48,9 @@ class HeatPumpController:
         self.topic_prefix = topic_prefix
 
         client = mqtt.Client(protocol=protocol)
+
+        if ca_certs is not None:
+            client.tls_set(ca_certs=ca_certs)
 
         if username is not None:
             client.username_pw_set(username, password=password)

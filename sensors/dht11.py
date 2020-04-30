@@ -36,8 +36,12 @@ class DHT11:
         protocol=mqtt.MQTTv31,
         username=None,
         password=None,
+        ca_certs=None
     ):
         client = mqtt.Client(protocol=protocol)
+
+        if ca_certs is not None:
+            client.tls_set(ca_certs=ca_certs)
 
         if username is not None:
             client.username_pw_set(username, password=password)

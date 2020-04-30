@@ -20,6 +20,7 @@ HeatPumpController(
     broker_port=int(env["BROKER_PORT"]),
     username=env["MQTT_USERNAME"],
     password=env["MQTT_PASSWORD"],
+    ca_certs=env["CERTIFICATE_AUTHORITY"],
     topic_prefix="grow_room/heat_pump"
 ).start()
 
@@ -29,6 +30,7 @@ DHT11(
     broker_port=int(env["BROKER_PORT"]),
     username=env["MQTT_USERNAME"],
     password=env["MQTT_PASSWORD"],
+    ca_certs=env["CERTIFICATE_AUTHORITY"],
     topic_prefix="grow_room/DHT11"
 ).start()
 
