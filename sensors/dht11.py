@@ -19,6 +19,7 @@ def on_mqtt_disconnect(topic_prefix):
     def _func(client, *args, **kwargs):
         will_topic = f"{topic_prefix}/connected"
         client.publish(will_topic, 0, qos=1, retain=True)
+        logger.debug("MQTT Disconnected")
     return _func()
 
 
@@ -57,6 +58,7 @@ def loop(
 
                 if cur_temperature_c != temperature_c:
                     temperature_c = cur_temperature_c
+                    logger.info(f"Temperature: {temperature_c}")
                     client.publish(f"{topic_prefix}/temperature", temperature_c, qos=1)
 
                 if cur_humidity != humidity:
@@ -65,7 +67,7 @@ def loop(
                     client.publish(f"{topic_prefix}/humidity", humidity, qos=1)
             except RuntimeError as error:
                 # Errors happen fairly often, DHT's are hard to read, just keep going
-                print(error.args[0])
+                logger.debug(error.args[0])
             time.sleep(2.0)
     except KeyboardInterrupt:
         client.disconnect()
