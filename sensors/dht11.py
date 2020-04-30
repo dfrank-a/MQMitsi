@@ -42,8 +42,8 @@ class DHT11:
     ):
         client = mqtt.Client(protocol=protocol)
 
-        if cafile is not None:
-            client.tls_set(cafile=cafile)
+        # if cafile is not None:
+        #     client.tls_set(cafile=cafile)
 
         if username is not None:
             client.username_pw_set(username, password=password)

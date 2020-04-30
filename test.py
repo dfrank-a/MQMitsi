@@ -17,7 +17,7 @@ env = os.environ
 HeatPumpController(
     serial_port=env["SERIAL_PORT"],
     broker=env["BROKER_URL"],
-    broker_port=env["BROKER_PORT"],
+    broker_port=int(env["BROKER_PORT"]),
     cafile=env["CERTIFICATE_AUTHORITY"],
     username=env["MQTT_USERNAME"],
     password=env["MQTT_PASSWORD"],
@@ -27,7 +27,7 @@ HeatPumpController(
 DHT11(
     data_pin=env["DHT11_PIN"],
 broker=env["BROKER_URL"],
-    broker_port=env["BROKER_PORT"],
+    broker_port=int(env["BROKER_PORT"]),
     cafile=env["CERTIFICATE_AUTHORITY"],
     username=env["MQTT_USERNAME"],
     password=env["MQTT_PASSWORD"],
