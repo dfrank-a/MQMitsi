@@ -16,7 +16,6 @@ def on_mqtt_connect(topic_prefix):
         client.will_set(will_topic, 0, qos=1, retain=True)
         client.publish(will_topic, 1, qos=1, retain=True)
         logger.debug("MQTT Connected.")
-
     return _func
 
 
@@ -25,8 +24,7 @@ def on_mqtt_disconnect(topic_prefix):
         will_topic = f"{topic_prefix}/connected"
         client.publish(will_topic, 0, qos=1, retain=True)
         logger.debug("MQTT Disconnected")
-
-    return _func()
+    return _func
 
 class DHT11:
     def __init__(
