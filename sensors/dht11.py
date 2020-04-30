@@ -34,14 +34,10 @@ class DHT11:
         broker_port,
         topic_prefix,
         protocol=mqtt.MQTTv31,
-        cafile=None,
         username=None,
         password=None,
     ):
         client = mqtt.Client(protocol=protocol)
-
-        # if cafile is not None:
-        #     client.tls_set(cafile=cafile)
 
         if username is not None:
             client.username_pw_set(username, password=password)

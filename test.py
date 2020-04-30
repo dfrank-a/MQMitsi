@@ -18,7 +18,6 @@ HeatPumpController(
     serial_port=env["SERIAL_PORT"],
     broker=env["BROKER_URL"],
     broker_port=int(env["BROKER_PORT"]),
-    cafile=env["CERTIFICATE_AUTHORITY"],
     username=env["MQTT_USERNAME"],
     password=env["MQTT_PASSWORD"],
     topic_prefix="grow_room/heat_pump"
@@ -26,9 +25,8 @@ HeatPumpController(
 
 DHT11(
     data_pin=env["DHT11_PIN"],
-broker=env["BROKER_URL"],
+    broker=env["BROKER_URL"],
     broker_port=int(env["BROKER_PORT"]),
-    cafile=env["CERTIFICATE_AUTHORITY"],
     username=env["MQTT_USERNAME"],
     password=env["MQTT_PASSWORD"],
     topic_prefix="grow_room/DHT11"
