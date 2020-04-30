@@ -1,3 +1,4 @@
+import atexit
 import logging
 import serial
 
@@ -30,22 +31,36 @@ class HeatPumpController:
     ]
 
     def __init__(self,
-                 serial_port='/dev/serial0',
-                 broker='127.0.0.1',
-                 broker_port=1883,
-                 topic_prefix='heat_pump',
+                 serial_port,
+                 broker,
+                 broker_port,
+                 topic_prefix,
+                 protocol=mqtt.MQTTv31,
+                 cafile=None,
+                 username=None,
+                 password=None,
                  temp_refresh_rate=10,
                  settings_refresh_rate=2,
                  operation_status_refresh_rate=2
              ):
 
+        self.running = False
         self.topic_prefix = topic_prefix
-        self.broker = broker
-        self.broker_port = broker_port
-        self.client = mqtt.Client(protocol=mqtt.MQTTv31)
-        self.client.on_connect = self.on_mqtt_connect
-        self.client.on_message = self.on_mqtt_message
-        self.client.on_disconnect = self.on_mqtt_disconnect
+
+        client = mqtt.Client(protocol=protocol)
+
+        if cafile is not None:
+            client.tls_set(cafile=cafile)
+
+        if username is not None:
+            client.username_pw_set(username, password=password)
+
+        client.on_connect = self.on_mqtt_connect
+        client.on_message = self.on_mqtt_message
+        client.on_disconnect = self.on_mqtt_disconnect
+        client.connect(host=broker, port=broker_port)
+
+        self.client = client
 
         self.device = serial.Serial(
             port=serial_port, baudrate=2400, parity=serial.PARITY_EVEN
@@ -63,13 +78,13 @@ class HeatPumpController:
         self.current_pump_state = {}
 
     def queue_request_message(self, message, refresh_rate):
-        while True:
+        while self.running:
             logger.debug(f"Queued {repr(message)}")
             self.device_queue.put(message)
             sleep(refresh_rate + random() / 10)
 
     def process_messages(self):
-        while True:
+        while self.running:
             try:
                 message = self.device_queue.get()
                 self.device.write(message)
@@ -156,7 +171,8 @@ class HeatPumpController:
         will_topic = f'{self.topic_prefix}/connected'
         client.publish(will_topic, 0, qos=1, retain=True)
 
-    def loop(self):
+    def start(self):
+        self.running = True
         self.device_queue.put(Message.start_command())
         Thread(target=self.process_messages).start()
 
@@ -171,5 +187,9 @@ class HeatPumpController:
                 args=periodic
             ).start()
 
-        self.client.connect(host=self.broker, port=self.broker_port)
-        self.client.loop_forever()
+        self.client.loop_start()
+        atexit.register(self._loop_stop)
+
+    def _loop_stop(self):
+        self.client.loop_stop()
+        self.running = False
