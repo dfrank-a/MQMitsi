@@ -20,7 +20,6 @@ def on_mqtt_connect(topic_prefix):
         client.will_set(will_topic, 0, qos=1, retain=True)
         client.publish(will_topic, 1, qos=1, retain=True)
         logger.info("MQTT Connected.")
-
     return _func
 
 
@@ -28,10 +27,13 @@ def on_mqtt_disconnect(topic_prefix):
     def _func(client, *args, **kwargs):
         will_topic = f"{topic_prefix}/connected"
         client.publish(will_topic, 0, qos=1, retain=True)
+    return _func()
 
 
-def __main__(
-    broker="127.0.0.1", broker_port=1883, topic_prefix="grow_room/sensors/dh11"
+def loop(
+    broker="127.0.0.1",
+    broker_port=1883,
+    topic_prefix="grow_room/sensors/dh11"
 ):
     client = mqtt.Client(protocol=mqtt.MQTTv31)
     client.on_connect = on_mqtt_connect(topic_prefix)
@@ -51,8 +53,6 @@ def __main__(
 
                 if cur_temperature_c != temperature_c:
                     temperature_c = cur_temperature_c
-                    temperature_f = round(cur_temperature_c * (9 / 5) + 32, 2)
-                    logger.info(f"Temp: {temperature_f:.1f} F / {temperature_c:.1f} C")
                     client.publish(f"{topic_prefix}/temperature", temperature_c, qos=1)
 
                 if cur_humidity != humidity:
@@ -65,7 +65,3 @@ def __main__(
             time.sleep(2.0)
     except KeyboardInterrupt:
         client.disconnect()
-
-
-if __name__ == "__main__":
-    __main__()
