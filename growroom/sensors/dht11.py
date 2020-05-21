@@ -3,6 +3,7 @@ import logging
 import time
 import board
 import adafruit_dht
+import ssl
 import paho.mqtt.client as mqtt
 
 from threading import Thread
@@ -36,12 +37,24 @@ class DHT11:
         protocol=mqtt.MQTTv31,
         username=None,
         password=None,
-        ca_certs=None
+        ca_certs=None,
+        certfile=certfile,
+        keyfile=keyfile,
+        cert_reqs=getattr(ssl, cert_reqs),
+        tls_version=getattr(ssl, tls_version),
+        ciphers=ciphers
     ):
         client = mqtt.Client(protocol=protocol)
 
         if ca_certs is not None:
-            client.tls_set(ca_certs=ca_certs)
+            client.tls_set(
+                ca_certs,
+                certfile=certfile,
+                keyfile=keyfile,
+                cert_reqs=getattr(ssl, cert_reqs),
+                tls_version=getattr(ssl, tls_version),
+                ciphers=ciphers
+            )
 
         if username is not None:
             client.username_pw_set(username, password=password)

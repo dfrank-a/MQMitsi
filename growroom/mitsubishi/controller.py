@@ -1,6 +1,7 @@
 import atexit
 import logging
 import serial
+import ssl
 
 from pprint import pformat
 from random import random
@@ -39,6 +40,11 @@ class HeatPumpController:
                  username=None,
                  password=None,
                  ca_certs=None,
+                 certfile=None,
+                 keyfile=None,
+                 cert_reqs='CERT_NONE',
+                 tls_version='PROTOCOL_TLSv1',
+                 ciphers=None,
                  temp_refresh_rate=10,
                  settings_refresh_rate=2,
                  operation_status_refresh_rate=2
@@ -50,7 +56,14 @@ class HeatPumpController:
         client = mqtt.Client(protocol=protocol)
 
         if ca_certs is not None:
-            client.tls_set(ca_certs=ca_certs)
+            client.tls_set(
+                ca_certs,
+                certfile=certfile,
+                keyfile=keyfile,
+                cert_reqs=getattr(ssl, cert_reqs),
+                tls_version=getattr(ssl, tls_version),
+                ciphers=ciphers
+            )
 
         if username is not None:
             client.username_pw_set(username, password=password)
