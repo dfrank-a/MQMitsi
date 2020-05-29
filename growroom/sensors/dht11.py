@@ -3,8 +3,7 @@ import logging
 import time
 import board
 import adafruit_dht
-import ssl
-import paho.mqtt.client as mqtt
+from mqtt_client import MQTTClient
 
 from threading import Thread
 
@@ -17,6 +16,7 @@ def on_mqtt_connect(topic_prefix):
         client.will_set(will_topic, 0, qos=1, retain=True)
         client.publish(will_topic, 1, qos=1, retain=True)
         logger.debug("MQTT Connected.")
+
     return _func
 
 
@@ -25,45 +25,21 @@ def on_mqtt_disconnect(topic_prefix):
         will_topic = f"{topic_prefix}/connected"
         client.publish(will_topic, 0, qos=1, retain=True)
         logger.debug("MQTT Disconnected")
+
     return _func
+
 
 class DHT11:
     def __init__(
-        self,
-        data_pin,
-        broker,
-        broker_port,
-        topic_prefix,
-        protocol=mqtt.MQTTv31,
-        username=None,
-        password=None,
-        ca_certs=None,
-        certfile=certfile,
-        keyfile=keyfile,
-        cert_reqs=getattr(ssl, cert_reqs),
-        tls_version=getattr(ssl, tls_version),
-        ciphers=ciphers
+        self, data_pin, topic_prefix,
     ):
-        client = mqtt.Client(protocol=protocol)
-
-        if ca_certs is not None:
-            client.tls_set(
-                ca_certs,
-                certfile=certfile,
-                keyfile=keyfile,
-                cert_reqs=getattr(ssl, cert_reqs),
-                tls_version=getattr(ssl, tls_version),
-                ciphers=ciphers
-            )
-
-        if username is not None:
-            client.username_pw_set(username, password=password)
+        client = MQTTClient()
 
         client.on_connect = on_mqtt_connect(topic_prefix)
         client.on_disconnect = on_mqtt_disconnect(topic_prefix)
-        client.connect_async(host=broker, port=broker_port)
+        client.connect_async()
 
-        self.mqtt_client=client
+        self.mqtt_client = client
         self.device = adafruit_dht.DHT11(getattr(board, data_pin))
         self.topic_prefix = topic_prefix
         self.running = None
@@ -79,12 +55,16 @@ class DHT11:
                 if cur_temperature_c != temperature_c:
                     temperature_c = cur_temperature_c
                     logger.info(f"Temperature: {temperature_c}")
-                    self.mqtt_client.publish(f"{self.topic_prefix}/temperature", temperature_c, qos=1)
+                    self.mqtt_client.publish(
+                        f"{self.topic_prefix}/temperature", temperature_c, qos=1
+                    )
 
                 if cur_humidity != humidity:
                     humidity = cur_humidity
                     logger.info(f"Humidity: {humidity}%")
-                    self.mqtt_client.publish(f"{self.topic_prefix}/humidity", humidity, qos=1)
+                    self.mqtt_client.publish(
+                        f"{self.topic_prefix}/humidity", humidity, qos=1
+                    )
             except RuntimeError as error:
                 # Errors happen fairly often, DHT's are hard to read, just keep going
                 logger.debug(error.args[0])

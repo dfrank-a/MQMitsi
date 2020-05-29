@@ -10,6 +10,7 @@ from .lookup import (
     VERTICAL_VANE_LOOKUP,
 )
 
+
 class Message(bytearray):
     HEADER_LEN = 5
 
@@ -92,11 +93,14 @@ class Message(bytearray):
         )
 
 
-def message_property(data_position, update_bitmask=None, bitmask_index=6, lookup_table=tuple()):
+def message_property(
+    data_position, update_bitmask=None, bitmask_index=6, lookup_table=tuple()
+):
 
     get_lookup = dict(lookup_table)
 
     if update_bitmask is not None:
+
         def _getter(self):
             if (
                 self.subtype == self.SETTINGS_INFO
@@ -107,6 +111,7 @@ def message_property(data_position, update_bitmask=None, bitmask_index=6, lookup
             return None
 
     else:
+
         def _getter(self):
             value = self[self.HEADER_LEN + data_position]
             return get_lookup.get(value, value)
@@ -118,7 +123,9 @@ def message_property(data_position, update_bitmask=None, bitmask_index=6, lookup
             self[bitmask_index] |= update_bitmask
             self[self.HEADER_LEN + data_position] = set_lookup[value]
             self[-1] = Message.checksum(self[:-1])
+
     else:
+
         def _setter(self, value):
             self[self.HEADER_LEN + data_position] = set_lookup[value]
             self[-1] = Message.checksum(self[:-1])
@@ -139,10 +146,7 @@ class SettingsMessage(Message):
         7, update_bitmask=0b10000, lookup_table=VERTICAL_VANE_LOOKUP
     )
     horizontal_vane = message_property(
-        10,
-        update_bitmask=0b1,
-        bitmask_index=7,
-        lookup_table=HORIZONTAL_VANE_LOOKUP
+        10, update_bitmask=0b1, bitmask_index=7, lookup_table=HORIZONTAL_VANE_LOOKUP
     )
 
     @classmethod
@@ -226,12 +230,7 @@ class TemperatureMessage(Message):
         return cls.build(cls.REQUEST_INFO, [cls.ROOM_TEMP_INFO, *([0x00] * 15)])
 
     def __str__(self):
-        return " ".join(
-            [
-                super().__str__(),
-                f"Room: {self.room_temp} ºC",
-            ]
-        )
+        return " ".join([super().__str__(), f"Room: {self.room_temp} ºC",])
 
     def __eq__(self, other):
         return self.room_temp == other.room_temp
@@ -254,8 +253,8 @@ class OperationStatusMessage(Message):
     def is_operation_message(cls, message):
         message = Message(message)
         return (
-                message.type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
-                and message.subtype == cls.OPERATION_STATUS
+            message.type in {cls.REQUEST_INFO, cls.RESPONSE_INFO}
+            and message.subtype == cls.OPERATION_STATUS
         )
 
     @classmethod
@@ -273,5 +272,7 @@ class OperationStatusMessage(Message):
     def __eq__(self, other):
         if not isinstance(other, OperationStatusMessage):
             return False
-        return self.operating == other.operating \
-               and self.compressor_frequency == other.compressor_frequency
+        return (
+            self.operating == other.operating
+            and self.compressor_frequency == other.compressor_frequency
+        )

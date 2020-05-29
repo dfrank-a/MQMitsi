@@ -1,7 +1,6 @@
 import atexit
 import logging
 import serial
-import ssl
 
 from pprint import pformat
 from random import random
@@ -17,6 +16,7 @@ from .message import (
     TemperatureMessage,
     OperationStatusMessage,
 )
+from mqtt_client import MQTTClient
 
 logger = logging.getLogger(__name__)
 
@@ -31,47 +31,23 @@ class HeatPumpController:
         "horizontal_vane",
     ]
 
-    def __init__(self,
-                 serial_port,
-                 broker,
-                 broker_port,
-                 topic_prefix,
-                 protocol=mqtt.MQTTv31,
-                 username=None,
-                 password=None,
-                 ca_certs=None,
-                 certfile=None,
-                 keyfile=None,
-                 cert_reqs='CERT_NONE',
-                 tls_version='PROTOCOL_TLSv1',
-                 ciphers=None,
-                 temp_refresh_rate=10,
-                 settings_refresh_rate=2,
-                 operation_status_refresh_rate=2
-             ):
+    def __init__(
+        self,
+        serial_port,
+        topic_prefix,
+        temp_refresh_rate=10,
+        settings_refresh_rate=2,
+        operation_status_refresh_rate=2,
+    ):
 
         self.running = False
         self.topic_prefix = topic_prefix
 
-        client = mqtt.Client(protocol=protocol)
-
-        if ca_certs is not None:
-            client.tls_set(
-                ca_certs,
-                certfile=certfile,
-                keyfile=keyfile,
-                cert_reqs=getattr(ssl, cert_reqs),
-                tls_version=getattr(ssl, tls_version),
-                ciphers=ciphers
-            )
-
-        if username is not None:
-            client.username_pw_set(username, password=password)
-
+        client = MQTTClient()
         client.on_connect = self.on_mqtt_connect
         client.on_message = self.on_mqtt_message
         client.on_disconnect = self.on_mqtt_disconnect
-        client.connect_async(host=broker, port=broker_port)
+        client.connect_async()
 
         self.client = client
 
@@ -121,7 +97,7 @@ class HeatPumpController:
                         topic=f"{self.topic_prefix}/room_temp",
                         payload=self.room_temp,
                         qos=1,
-                        retain=True
+                        retain=True,
                     )
             elif isinstance(response, OperationStatusMessage):
                 if self.operating != response.operating:
@@ -131,7 +107,7 @@ class HeatPumpController:
                         topic=f"{self.topic_prefix}/compressor/state",
                         payload=self.operating,
                         qos=1,
-                        retain=True
+                        retain=True,
                     )
                 if self.compressor_frequency != response.compressor_frequency:
                     self.compressor_frequency = response.compressor_frequency
@@ -139,7 +115,7 @@ class HeatPumpController:
                         topic=f"{self.topic_prefix}/compressor/frequency",
                         payload=self.compressor_frequency,
                         qos=1,
-                        retain=True
+                        retain=True,
                     )
             elif isinstance(response, SettingsMessage):
                 changes = {
@@ -155,11 +131,11 @@ class HeatPumpController:
                             topic=f"{self.topic_prefix}/settings/{attr}",
                             payload=value,
                             qos=1,
-                            retain=True
+                            retain=True,
                         )
 
     def on_mqtt_connect(self, client: mqtt.Client, *args, **kwargs):
-        will_topic = f'{self.topic_prefix}/connected'
+        will_topic = f"{self.topic_prefix}/connected"
         client.will_set(will_topic, 0, qos=1, retain=True)
         client.publish(will_topic, 1, qos=1, retain=True)
         client.subscribe(f"{self.topic_prefix}/update/#")
@@ -168,10 +144,10 @@ class HeatPumpController:
     def on_mqtt_message(self, _, __, msg):
         logger.info(f"MQTT Message: {msg.topic}: {msg.payload}")
 
-        attribute = msg.topic.split('/')[-1]
+        attribute = msg.topic.split("/")[-1]
         if attribute in self.SETTINGS_ATTRS:
-            value = msg.payload.decode('utf-8')
-            if attribute == 'set_point':
+            value = msg.payload.decode("utf-8")
+            if attribute == "set_point":
                 value = float(value)
 
             update_command = SettingsMessage.update_command()
@@ -181,7 +157,7 @@ class HeatPumpController:
             self.device_queue.put(update_command)
 
     def on_mqtt_disconnect(self, client: mqtt.Client, *args, **kwargs):
-        will_topic = f'{self.topic_prefix}/connected'
+        will_topic = f"{self.topic_prefix}/connected"
         client.publish(will_topic, 0, qos=1, retain=True)
 
     def start(self):
@@ -193,13 +169,10 @@ class HeatPumpController:
         periodic_checks = [
             (TemperatureMessage.info_request(), self.temp_refresh_rate),
             (SettingsMessage.info_request(), self.settings_refresh_rate),
-            (OperationStatusMessage.info_request(), self.operation_status_refresh_rate)
+            (OperationStatusMessage.info_request(), self.operation_status_refresh_rate),
         ]
         for periodic in periodic_checks:
-            Thread(
-                target=self.queue_request_message,
-                args=periodic
-            ).start()
+            Thread(target=self.queue_request_message, args=periodic).start()
 
         atexit.register(self._loop_stop)
 
