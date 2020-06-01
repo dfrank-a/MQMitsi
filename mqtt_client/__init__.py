@@ -1,5 +1,8 @@
 import os
+import ssl
+
 import paho.mqtt.client as mqtt
+
 
 env = os.environ
 
@@ -9,13 +12,22 @@ class MQTTClient(mqtt.Client):
         super().__init__(protocol=getattr(mqtt, env.get("MQTT_PROTOCOL", "MQTTv311")))
 
         ca_certs = env.get("CA_ROOT_CERT_FILE")
+        certfile = env.get("LOCAL_CERTIFICATE_FILE")
+        keyfile = env.get("LOCAL_PRIVATE_KEY")
 
         if ca_certs is not None:
-            self.tls_set(
-                ca_certs,
-                certfile=env.get("LOCAL_CERTIFICATE_FILE"),
-                keyfile=env.get("LOCAL_PRIVATE_KEY"),
-            )
+            if env.get("AWS_IOT_CONTEXT"):
+                ssl_context = ssl.create_default_context()
+                ssl_context.set_alpn_protocols(["x-amzn-mqtt-ca"])
+                ssl_context.load_verify_locations(cafile=ca_certs)
+                ssl_context.load_cert_chain(certfile=certfile, keyfile=keyfile)
+                self.tls_set_context(ssl_context)
+            else:
+                self.tls_set(
+                    ca_certs,
+                    certfile=certfile,
+                    keyfile=keyfile,
+                )
 
         username = env.get("MQTT_USERNAME")
         if username is not None:
